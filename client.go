@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+const (
+	crlf = "\r\n"
+)
+
 type Client struct {
 	conn  net.Conn
 	db    *DB // Pointer to currently selected DB
@@ -55,7 +59,9 @@ func (cli *Client) Interact() {
 // process returns reply.
 func (cli *Client) process(input string) string {
 	cli.args = strings.Fields(string(input))
-	cli.args[0] = strings.ToUpper(cli.args[0])
+	cli.args[0] = strings.ToLower(cli.args[0])
+	cli.reply = ""
+
 	cli.processCommand()
 
 	return cli.reply
@@ -63,49 +69,49 @@ func (cli *Client) process(input string) string {
 
 func (cli *Client) processCommand() {
 	// lookup cmd
-	cli.cmd = cmdDict[cli.args[0]]
+	cli.cmd = commands[cli.args[0]]
+
 	if cli.cmd == nil {
-		cli.setReplyError(ErrUnknownCmd)
+		cli.addReplyError(ErrUnknownCmd)
 		return
 	}
 
 	// execute cmd
-	if err := cli.cmd.Do(cli); err != nil {
-		cli.setReplyError(err)
-	}
+	cli.cmd.Do(cli)
 }
 
-func (cli *Client) setReply(s string) {
-	cli.reply = s
+func (cli *Client) addReply(s string) {
+	cli.reply += s
 }
 
-func (cli *Client) setReplyOK() {
-	cli.setReply("OK")
+func (cli *Client) addReplyStatus() {
+	// todo
+	cli.addReply(fmt.Sprintf("+"))
 }
 
-func (cli *Client) setReplyError(err error) {
-	cli.setReply(fmt.Sprintf("(error) %v", err.Error()))
-}
-
-func (cli *Client) setReplyNull(kind int) {
-	switch kind {
-	case OBJ_STRING:
-		cli.setReply("(nil)")
-	case OBJ_LIST:
-		cli.setReply("(empty list)")
-	case OBJ_SET:
-		cli.setReply("(empty set)")
-	case OBJ_ZSET:
-		cli.setReply("(empty zset)")
-	case OBJ_HASH:
-		cli.setReply("(empty hash)")
-	default:
-		panic(fmt.Sprintf("Unknown obj type:%v", kind))
-	}
+func (cli *Client) addReplyError(err error) {
+	cli.addReply(fmt.Sprintf("(error) %v", err.Error()))
 }
 
 func (cli *Client) setReplyInt(n int) {
-	cli.setReply(fmt.Sprintf("(integer) %d", n))
+	cli.addReply(fmt.Sprintf(":%d", n))
+}
+
+func (cli *Client) addReplyBulk() {
+
+	// todo
+}
+
+func (cli *Client) addReplyMultiBulk() {
+	// todo
+}
+
+func (cli *Client) setReplyOK() {
+	cli.addReply("OK")
+}
+
+func (cli *Client) setReplyNull() {
+
 }
 
 func (cli *Client) setReplyList(ls []string) {
@@ -113,7 +119,7 @@ func (cli *Client) setReplyList(ls []string) {
 	for i := 0; i < len(ls); i++ {
 		fmt.Fprintf(&sb, "%d)\"%s\"\n", i, ls[i])
 	}
-	cli.setReply(sb.String())
+	cli.addReply(sb.String())
 }
 
 func (cli *Client) Close() {

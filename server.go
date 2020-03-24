@@ -107,7 +107,7 @@ func NewServer(opt ...ServerOption) *Server {
 	}
 	srv.db = make([]*DB, srv.opts.dbnum)
 	for i := 0; i < opts.dbnum; i++ {
-		srv.db[i] = NewDB(i, srv)
+		srv.db[i] = NewDB()
 	}
 	return srv
 }
@@ -121,7 +121,8 @@ func NewServer(opt ...ServerOption) *Server {
 //
 // Serve will return a non-nil error unless Stop or GracefulStop is called.
 func (srv *Server) ListenAndServe() error {
-	addr := fmt.Sprintf("%s:%d", "127.0.0.1", srv.opts.port)
+	// todo:	signal.Notify(quitCh, os.Kill, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	addr := fmt.Sprintf("%s:%d", "127.0.0.1", srv.opts.port) // net.ResolveTCPAddr(
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)

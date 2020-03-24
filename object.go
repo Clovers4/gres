@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	OBJ_STRING = 0
-	OBJ_LIST   = 1
-	OBJ_SET    = 2
-	OBJ_ZSET   = 3
-	OBJ_HASH   = 4
+	OBJ_STRING = iota
+	OBJ_LIST
+	OBJ_SET
+	OBJ_ZSET
+	OBJ_HASH
 )
 
 type object struct {
@@ -38,18 +38,21 @@ func (obj *object) checkKind(kind int) bool {
 	return obj.kind == kind
 }
 
-func (obj *object) getString() (string, error) {
+func (obj *object) getString() string {
 	if obj.kind != OBJ_STRING {
-		return "", ErrWrongTypeOps
+		panic(ErrWrongTypeOps)
 	}
-	return obj.ptr.(string), nil
+	if obj.ptr!=nil{
+		return obj.ptr.(string)
+	}
+	return ""
 }
 
-func (obj *object) getList() (*container.CList, error) {
+func (obj *object) getList() *container.CList {
 	if obj.kind != OBJ_LIST {
-		return nil, ErrWrongTypeOps
+		panic(ErrWrongTypeOps)
 	}
-	return obj.ptr.(*container.CList), nil
+	return obj.ptr.(*container.CList)
 }
 
 func (obj *object) String() string {

@@ -20,6 +20,7 @@ func BenchmarkHash(b *testing.B) {
 
 func BenchmarkCMapSet(b *testing.B) {
 	m := NewCMap()
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		m.Set(strconv.Itoa(i), "value")

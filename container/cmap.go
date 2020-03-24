@@ -7,6 +7,7 @@ import (
 
 var defaultSegmentCount = 32
 
+// todo:动态调整
 type cmapSegment struct {
 	m  map[string]interface{}
 	mu sync.RWMutex // Read Write mutex, guards access to internal map.

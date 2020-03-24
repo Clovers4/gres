@@ -28,7 +28,7 @@ func TestBenchmark(t *testing.T) {
 			cli := NewClient()
 			startWg.Wait()
 			for n := 0; n < opNum; n++ {
-				cli.interact(fmt.Sprintf("set key%v value%v", n+i*threadNum, n))
+				cli.interact(fmt.Sprintf("set key%v value%v0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", n+i*threadNum, n))
 			}
 			endWg.Done()
 		}()
@@ -63,7 +63,7 @@ func TestBenchmarkGet(t *testing.T) {
 			cli := NewClient()
 			startWg.Wait()
 			for n := 0; n < opNum; n++ {
-				cli.interact(fmt.Sprintf("get key%v value%v", n+i*threadNum, n))
+				cli.interact(fmt.Sprintf("get key%v", n+i*threadNum))
 			}
 			endWg.Done()
 		}()

@@ -3,15 +3,13 @@ package gres
 import "github.com/clovers4/gres/container"
 
 type DB struct {
-	id  int // Database ID
 	all *container.CMap
-	srv *Server
+	//todo
+	save *container.CMap
 }
 
-func NewDB(id int, srv *Server) *DB {
+func NewDB() *DB {
 	return &DB{
-		id:  id,
-		srv: srv,
 		all: container.NewCMap(),
 	}
 }
@@ -23,10 +21,21 @@ func (db *DB) Set(key string, obj *object) *object {
 	return nil
 }
 
-func (db *DB) Get(key string) (obj *object, ok bool) {
+func (db *DB) Get(key string) *object {
 	v, ok := db.all.Get(key)
 	if !ok {
-		return nil, false
+		return nil
 	}
-	return v.(*object), ok
+	return v.(*object)
+}
+
+func (db *DB) CheckKind(key string, kind int) bool {
+	obj := db.Get(key)
+	if obj == nil {
+		return true
+	}
+	if obj.kind == kind {
+		return true
+	}
+	return false
 }

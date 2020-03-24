@@ -2,6 +2,7 @@ package gres
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -13,59 +14,63 @@ var (
 	ErrInvalidDbIndex = errors.New("ERR invalid DB index")
 )
 
-// cmdDict should be read-only
-var cmdDict map[string]Command
+var (
+	Reply_OK = "OK"
+)
 
-// todo:改为NewSetCmd
-// cmds should be read-only
-var cmdList = []*cmd{
-	{
-		"SET",
-		3,
-		setCmd,
-	},
-	{"GETSET",
-		3,
-		getsetCmd,
-	},
-	{
-		"GET",
-		2,
-		getCmd,
-	},
-	{"LPUSH",
-		-3,
-		lpushCmd,
-	},
-	{
-		"LRANGE",
-		4,
-		lrangeCmd,
-	},
-	{
-		"DEL",
-		-2,
-		delCmd,
-	},
-	{
-		"SELECT",
-		2,
-		selectCmd,
-	},
-}
+// commands should be read-only
+var commands map[string]Command
 
 func init() {
-	cmdDict = make(map[string]Command)
-	for _, cmd := range cmdList {
-		cmdDict[cmd.name] = cmd
+	registerCmd("set", 3, setCmd)
+	registerCmd("getset", 3, getsetCmd)
+	registerCmd("get", 2, getCmd)
+
+	registerCmd("lpush", 2, lpushCmd)
+	registerCmd("lrange", 2, lrangeCmd)
+
+	registerCmd("del", -2, delCmd)
+	registerCmd("select", 2, selectCmd)
+}
+
+// todo:改为NewSetCmd
+func registerCmd(name string, arity int, do doFunc) {
+	if commands == nil {
+		commands = make(map[string]Command)
+	}
+	if commands[name] != nil {
+		panic(fmt.Errorf("cmd %s is already registerd", name))
+	}
+	commands[name] = &cmd{
+		name,
+		arity,
+		do,
 	}
 }
 
 type Command interface {
-	Do(cli *Client) error
+	Do(cli *Client) *CommandReply
 }
 
-type doFunc func(cli *Client) error
+type CommandReply struct {
+
+	value interface{}
+}
+
+func (cr *CommandReply) String() string {
+	switch v := cr.value.(type) {
+	case error:
+		return v.Error()
+	case int:
+		return fmt.Sprintf("(integer) %d", v)
+	case string:
+		return fmt.Sprintf("\"%s\"", v)
+	default:
+		return "OK"
+	}
+}
+
+type doFunc func(cli *Client) *CommandReply
 
 type cmd struct {
 	name  string
@@ -73,10 +78,10 @@ type cmd struct {
 	do    doFunc
 }
 
-func (c *cmd) Do(cli *Client) error {
+func (c *cmd) Do(cli *Client) *CommandReply {
 	if c.arity > 0 && len(cli.args) != c.arity ||
 		len(cli.args) < -c.arity {
-		return ErrWrongNumArgs
+		return &CommandReply{ErrWrongNumArgs}
 	}
 	return c.do(cli)
 }
@@ -85,39 +90,27 @@ func (c *cmd) Do(cli *Client) error {
 /******************************
 *            string           *
 *******************************/
-func setCmd(cli *Client) error { // ok
+func setCmd(cli *Client) *CommandReply {
 	obj := createStringObject(cli.args[2])
-
 	cli.db.Set(cli.args[1], obj)
-	cli.setReplyOK()
-	return nil
+	return &CommandReply{}
 }
 
-func getsetCmd(cli *Client) error { // ok
+func getsetCmd(cli *Client) *CommandReply {
 	obj := createStringObject(cli.args[2])
-
-	oldObj:=cli.db.Set(cli.args[1], obj)
-	s, err := oldObj.getString()
-	if err != nil {
-		return err
+	oldObj := cli.db.Set(cli.args[1], obj)
+	if oldObj != nil && oldObj.kind != OBJ_STRING {
+		return &CommandReply{ErrWrongTypeOps}
 	}
-	cli.setReply(s)
-	return nil
+	return &CommandReply{oldObj.getString()}
 }
 
-func getCmd(cli *Client) error { // ok
-	obj, ok := cli.db.Get(cli.args[1])
-	if !ok {
-		cli.setReplyNull(OBJ_STRING)
-		return nil
+func getCmd(cli *Client) *CommandReply {
+	obj := cli.db.Get(cli.args[1])
+	if obj != nil && obj.kind != OBJ_STRING {
+		return &CommandReply{ErrWrongTypeOps}
 	}
-
-	s, err := obj.getString()
-	if err != nil {
-		return err
-	}
-	cli.setReply(s)
-	return nil
+	return &CommandReply{obj}
 }
 
 /******************************
@@ -143,7 +136,7 @@ func lpushCmd(cli *Client) error { // ok
 func lrangeCmd(cli *Client) error { // ok
 	obj, ok := cli.db.Get(cli.args[1])
 	if !ok {
-		cli.setReplyNull(OBJ_LIST)
+		cli.setReplyNull()
 		return nil
 	}
 	ls, err := obj.getList()

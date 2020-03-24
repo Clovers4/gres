@@ -1,75 +1,43 @@
-## 数据结构(data structure)
-1. 字符串 string
-2. 双端链表 container/list
-3. 字典 map, concurrent/map
-4. 跳跃表 ryszard/goskiplist
-5. HyperLogLog
+# 系统设计
 
-## 内存编码(encoding)
-1. intset
-2. ziplist
+## 数据结构与类型(data structure)
+1. 字符串 string 对应 string
+2. 双端链表 list 对应 clist
+3. 字典 hash 对应 cmap
+4. 集合 set 对应 cset
+5. 有序集合键 zset 对应 ryszard/goskiplist
 
-## 数据类型(type)
-1. 字符串键 string
-2. 列表键 list
-3. 散列键 hash
-4. 集合键 set
-5. 有序集合键 zset
-6. HyperLogLog
-
-## 数据库实现
-* redisDb
-* notify
-* rdb
-* aof
+## 功能
+* 持久化
+* 日志
 
 额外:
 * pubsub
 * multi
-* sort
-* bitops
 
-## 客户端 & 服务端
-* ae 事件处理器实现（基于 Reactor 模式）
-* networking 网络连接库
-* 单机 Redis 服务器的实现
-
-## 多机功能
-* 复制 replication
-* sentinel
-* cluster
-
-## 初始化
+## 初始化配置来源
 1. default settings
 2. flag 命令行
 3. config file 配置文件
 
-## Other ?
-* tls
-* 日志 sirupsen/logrus or uber-go/zap
-* ACL User id
-*
 
-## feature
-* goroutine 并发
-* new cmds, eg. LOCK, UNLOCK, SETJSON 
-
-## 论文
+## 论文结构
 第一章	绪论
 1 引言
 2 论文组织结构
 
 第二章	系统相关技术概述
 1 Golang简介
-2 raft简介
+2 c语言简介-与go的对比
+(3 raft简介)
 
 第三章	系统的需求分析
 3.1 系统需求概述
 3.2 系统功能需求分析
-	3.2.1 数据结构、类型，存取
-	3.2.2 日志、授权等次要功能
+	3.2.1 数据结构、类型，存取等主要功能
+	3.2.2 日志、鉴权等次要功能
 	3.2.3 持久化
-	3.2.4 分布式强一致性
+	(3.2.4 分布式强一致性)
 3.3 系统非功能需求
 	3.3.1 用户界面——命令行需求
 	3.3.2 性能需求
@@ -83,10 +51,10 @@
 
 第五章	系统实现
 5.1 开发环境与系统配置
-5.2 数据结构、类型，存取
-5.3 日志、授权等次要功能
+5.2 数据结构、类型，存取等主要功能
+5.3 日志、鉴权等次要功能
 5.4 持久化
-5.5 分布式强一致性
+（5.5 分布式强一致性）
 
 第六章 系统测试
 6.1 功能测试
@@ -97,6 +65,21 @@
 7.2 项目展望
 
 参考文献
+
+
+## 系统目标
+* 性能强大 （读写时不会锁整个db，持久化的时候也能渐进式地进行），利用goroutine协程以超越redis单线程性能瓶颈
+* 有基本的kv存取，如，get/set。
+* golang原生，丰富go生态，方便阅读研究，二次开发修改，最好可独立出内嵌型db，轻量，以再利用。
+* 原理尽量简单，方便维护和理解。直接存储在内存中（类redis），因此需要实现lru逐出。内存hashmap还有一些好处，相比于b+tree,lsm等需要wal的/部分数据在磁盘上的，内存的反应一定更快。也显得更加轻量
+
+
+提高方向（二选一？）：
+1. 支持更多数据结构（仿照redis，相较之下仅有性能提升，且持久化实现难度提高），如，list，set，zset，hash。(涉及lpush/lpop,sadd,zadd,hset等相应功能)
+
+2. 强一致性kv，并提供分布式功能，如，分布式锁trylock，分布式唯一id。（与“性能强大”可能互斥，etcd貌似用mvcc等技术实现高并发，但自己实现的话技术难度和复杂度会大大提高，并且由于使用了raft，基本上就是要实现成etcd这样，创新点又少了——>因为这些功能实际上可以用etcd 在proxy层或client层做，除非是要为了这些功能做特殊优化，难度大）
+（raft库本身带有很多）
+
 
 
 
