@@ -5,80 +5,109 @@ import (
 	"sync"
 )
 
-var defaultSegmentCount = 32
+const defaultSegmentCount = 32
 
-// todo:动态调整
+// todo: 动态调整
 type cmapSegment struct {
-	m  map[string]interface{}
-	mu sync.RWMutex // Read Write mutex, guards access to internal map.
+	items        map[string]interface{}
+	sync.RWMutex // Read Write mutex, guards access to internal map.
 }
 
 type CMap struct {
-	segs []*cmapSegment
+	segments []*cmapSegment
 }
 
 func NewCMap() *CMap {
-	m := &CMap{
-		segs: make([]*cmapSegment, defaultSegmentCount),
+	cm := &CMap{
+		segments: make([]*cmapSegment, defaultSegmentCount),
 	}
 	for i := 0; i < defaultSegmentCount; i++ {
-		m.segs[i] = &cmapSegment{m: make(map[string]interface{})}
+		cm.segments[i] = &cmapSegment{items: make(map[string]interface{})}
 	}
-	return m
+	return cm
 }
 
 // getSegment returns segment related the given key
 func (cm *CMap) getSegment(key string) *cmapSegment {
-	return cm.segs[hash(key)%uint32(defaultSegmentCount)]
+	return cm.segments[hash(key)%uint32(defaultSegmentCount)]
 }
 
-// Set the given value under the specified key.
-func (cm *CMap) Set(key string, value interface{}) interface{}{
+// set the given value under the specified key.
+func (cm *CMap) Set(key string, value interface{}) (val interface{}, existed bool) {
 	seg := cm.getSegment(key)
-	seg.mu.Lock()
-	old:=seg.m[key]
-	seg.m[key] = value
-	seg.mu.Unlock()
-	return old
+	seg.Lock()
+	old, ok := seg.items[key]
+	seg.items[key] = value
+	seg.Unlock()
+	return old, ok
 }
 
-// Get retrieves an element from map under given key.
-func (cm *CMap) Get(key string) (interface{}, bool) {
+// get retrieves an element from map under given key.
+func (cm *CMap) Get(key string) (val interface{}, existed bool) {
 	seg := cm.getSegment(key)
-	seg.mu.RLock()
-	val, ok := seg.m[key]
-	seg.mu.RUnlock()
+	seg.RLock()
+	val, ok := seg.items[key]
+	seg.RUnlock()
 	return val, ok
 }
 
 func (cm *CMap) Exist(key string) bool {
 	seg := cm.getSegment(key)
-	seg.mu.RLock()
-	_, ok := seg.m[key]
-	seg.mu.RUnlock()
+	seg.RLock()
+	_, ok := seg.items[key]
+	seg.RUnlock()
 	return ok
 }
 
 // Remove removes an element from the map.
 func (cm *CMap) Remove(key string) (v interface{}, ok bool) {
 	seg := cm.getSegment(key)
-	seg.mu.Lock()
-	v, ok = seg.m[key]
-	delete(seg.m, key)
-	seg.mu.Unlock()
+	seg.Lock()
+	v, ok = seg.items[key]
+	delete(seg.items, key)
+	seg.Unlock()
 	return v, ok
 }
 
 // Count returns amount of elements in CMap.
 // But the count is not very accurate.
 func (cm *CMap) Count() int {
-	c := 0
-	for _, seg := range cm.segs {
-		seg.mu.RLock()
-		c += len(seg.m)
-		seg.mu.RUnlock()
+	count := 0
+	for _, seg := range cm.segments {
+		seg.RLock()
+		count += len(seg.items)
+		seg.RUnlock()
 	}
-	return c
+	return count
+}
+
+type KVPair struct {
+	Key   string
+	Value interface{}
+}
+
+// Snapshot cannot get real consistent data map expect in locked.
+func (cm *CMap) Snapshot() (int, <-chan KVPair) {
+	count := cm.Count()
+	ch := make(chan KVPair)
+	go func() {
+		wg := sync.WaitGroup{}
+		wg.Add(len(cm.segments))
+
+		for _, seg := range cm.segments {
+			go func(seg *cmapSegment) {
+				seg.RLock()
+				for key, val := range seg.items {
+					ch <- KVPair{key, val}
+				}
+				seg.RUnlock()
+				wg.Done()
+			}(seg)
+		}
+		wg.Wait()
+		close(ch) //todo:?
+	}()
+	return count, ch
 }
 
 func hash(key string) uint32 {

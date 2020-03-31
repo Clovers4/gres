@@ -9,7 +9,7 @@ import (
 var (
 	ErrUnknownCmd     = errors.New("ERR unknown command")
 	ErrWrongNumArgs   = errors.New("ERR wrong number of arguments for the command")
-	ErrWrongTypeOps   = errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
+	ErrWrongTypeOps = errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
 	ErrWrongTypeInt   = errors.New("ERR value is not an integer")
 	ErrInvalidDbIndex = errors.New("ERR invalid DB index")
 )
@@ -22,15 +22,15 @@ var (
 var commands map[string]Command
 
 func init() {
-	registerCmd("set", 3, setCmd)
-	registerCmd("getset", 3, getsetCmd)
-	registerCmd("get", 2, getCmd)
-
-	registerCmd("lpush", 2, lpushCmd)
-	registerCmd("lrange", 2, lrangeCmd)
-
-	registerCmd("del", -2, delCmd)
-	registerCmd("select", 2, selectCmd)
+	//registerCmd("set", 3, setCmd)
+	//registerCmd("getset", 3, getsetCmd)
+	//registerCmd("get", 2, getCmd)
+	//
+	//registerCmd("lpush", 2, lpushCmd)
+	//registerCmd("lrange", 2, lrangeCmd)
+	//
+	//registerCmd("del", -2, delCmd)
+	//registerCmd("select", 2, selectCmd)
 }
 
 // todo:改为NewSetCmd
@@ -90,85 +90,85 @@ func (c *cmd) Do(cli *Client) *CommandReply {
 /******************************
 *            string           *
 *******************************/
-func setCmd(cli *Client) *CommandReply {
-	obj := createStringObject(cli.args[2])
-	cli.db.Set(cli.args[1], obj)
-	return &CommandReply{}
-}
-
-func getsetCmd(cli *Client) *CommandReply {
-	obj := createStringObject(cli.args[2])
-	oldObj := cli.db.Set(cli.args[1], obj)
-	if oldObj != nil && oldObj.kind != OBJ_STRING {
-		return &CommandReply{ErrWrongTypeOps}
-	}
-	return &CommandReply{oldObj.getString()}
-}
-
-func getCmd(cli *Client) *CommandReply {
-	obj := cli.db.Get(cli.args[1])
-	if obj != nil && obj.kind != OBJ_STRING {
-		return &CommandReply{ErrWrongTypeOps}
-	}
-	return &CommandReply{obj}
-}
+//func setCmd(cli *Client) *CommandReply {
+//	obj := engine.StringObject(cli.args[2])
+//	cli.db.set(cli.args[1], obj)
+//	return &CommandReply{}
+//}
+//
+//func getsetCmd(cli *Client) *CommandReply {
+//	obj := engine.StringObject(cli.args[2])
+//	oldObj := cli.db.set(cli.args[1], obj)
+//	if oldObj != nil && oldObj.kind != engine.ObjPlain {
+//		return &CommandReply{ErrWrongTypeOps}
+//	}
+//	return &CommandReply{oldObj.getString()}
+//}
+//
+//func getCmd(cli *Client) *CommandReply {
+//	obj := cli.db.get(cli.args[1])
+//	if obj != nil && obj.kind != engine.ObjPlain {
+//		return &CommandReply{ErrWrongTypeOps}
+//	}
+//	return &CommandReply{obj}
+//}
 
 /******************************
 *            list           *
 *******************************/
-func lpushCmd(cli *Client) error { // ok
-	obj, ok := cli.db.Get(cli.args[1])
-	if !ok {
-		obj = createListObject()
-		cli.db.Set(cli.args[1], obj)
-	}
-	ls, err := obj.getList()
-	if err != nil {
-		return err
-	}
-
-	len := ls.LPush(cli.args[2:]...)
-	cli.setReplyInt(len)
-	return nil
-}
+//func lpushCmd(cli *Client) error { // ok
+//	obj, ok := cli.db.get(cli.args[1])
+//	if !ok {
+//		obj = ListObject()
+//		cli.db.set(cli.args[1], obj)
+//	}
+//	ls, err := obj.getList()
+//	if err != nil {
+//		return err
+//	}
+//
+//	len := ls.LPush(cli.args[2:]...)
+//	cli.setReplyInt(len)
+//	return nil
+//}
 
 // lrangeCmd: LRANGE key start stop
-func lrangeCmd(cli *Client) error { // ok
-	obj, ok := cli.db.Get(cli.args[1])
-	if !ok {
-		cli.setReplyNull()
-		return nil
-	}
-	ls, err := obj.getList()
-	if err != nil {
-		return err
-	}
-
-	start, err1 := strconv.Atoi(cli.args[2])
-	stop, err2 := strconv.Atoi(cli.args[3])
-	if err1 != nil || err2 != nil {
-		return ErrWrongTypeInt
-	}
-
-	res := ls.Range(start, stop)
-	cli.setReplyList(res)
-	return nil
-}
+//func lrangeCmd(cli *Client) error { // ok
+//	obj, ok := cli.db.get(cli.args[1])
+//	if !ok {
+//		cli.setReplyNull()
+//		return nil
+//	}
+//	ls, err := obj.getList()
+//	if err != nil {
+//		return err
+//	}
+//
+//	start, err1 := strconv.Atoi(cli.args[2])
+//	stop, err2 := strconv.Atoi(cli.args[3])
+//	if err1 != nil || err2 != nil {
+//		return ErrWrongTypeInt
+//	}
+//
+//	res := ls.Range(start, stop)
+//	cli.setReplyList(res)
+//	return nil
+//}
 
 /******************************
 *            db           *
 *******************************/
-func delCmd(cli *Client) error { // ok
-	success := 0
-	for i := 1; i < len(cli.args); i++ {
-		_, ok := cli.db.all.Remove(cli.args[i])
-		if ok {
-			success++
-		}
-	}
-	cli.setReplyInt(success)
-	return nil
-}
+//func delCmd(cli *Client) error { // ok
+//	success := 0
+//	for i := 1; i < len(cli.args); i++ {
+//		_, ok := cli.db.cleanMap.Remove(cli.args[i])
+//		if ok {
+//			success++
+//		}
+//	}
+//	cli.setReplyInt(success)
+//	return nil
+//}
 
 func selectCmd(cli *Client) error { // ok
 	index, err := strconv.Atoi(cli.args[1])

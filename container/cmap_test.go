@@ -75,7 +75,7 @@ func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 //
 //func TestConcurrentFail(t *testing.T) {
 //	loopN := 100
-//	m := make(map[string]int)
+//	items := make(map[string]int)
 //	start := sync.WaitGroup{}
 //	start.Add(1)
 //	end := sync.WaitGroup{}
@@ -83,12 +83,12 @@ func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 //	for i := 0; i < loopN; i++ {
 //		go func() {
 //			start.Wait()
-//			m[strconv.Itoa(i)] = i
+//			items[strconv.Itoa(i)] = i
 //			end.Done()
 //		}()
 //	}
 //	start.Done()
 //	end.Wait()
-//	fmt.Println(len(m),m)
-//	assert.NotEqual(t, loopN, len(m))
+//	fmt.Println(len(items),items)
+//	assert.NotEqual(t, loopN, len(items))
 //}

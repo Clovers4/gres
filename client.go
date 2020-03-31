@@ -3,6 +3,7 @@ package gres
 import (
 	"bytes"
 	"fmt"
+	"github.com/clovers4/gres/engine"
 	"net"
 	"strings"
 )
@@ -13,7 +14,7 @@ const (
 
 type Client struct {
 	conn  net.Conn
-	db    *DB // Pointer to currently selected DB
+	db    *engine.DB // Pointer to currently selected DB
 	srv   *Server
 	args  []string
 	cmd   Command

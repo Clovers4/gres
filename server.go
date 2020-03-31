@@ -2,6 +2,7 @@ package gres
 
 import (
 	"fmt"
+	"github.com/clovers4/gres/engine"
 	"go.uber.org/zap"
 	"net"
 	"runtime"
@@ -22,7 +23,7 @@ const (
 type Server struct {
 	opts serverOptions
 	// db
-	db []*DB
+	db []*engine.DB
 	//	networking
 	clients []*Client
 	log     *zap.Logger
@@ -105,9 +106,9 @@ func NewServer(opt ...ServerOption) *Server {
 		opts: opts,
 		log:  log,
 	}
-	srv.db = make([]*DB, srv.opts.dbnum)
+	srv.db = make([]*engine.DB, srv.opts.dbnum)
 	for i := 0; i < opts.dbnum; i++ {
-		srv.db[i] = NewDB()
+		srv.db[i] = engine.NewDB()
 	}
 	return srv
 }

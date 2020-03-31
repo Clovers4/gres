@@ -15,3 +15,6 @@
 # vendor/
 
 .idea/*
+
+my_test.go
+my_bench_test.go
