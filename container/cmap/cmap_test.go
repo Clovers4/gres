@@ -1,4 +1,4 @@
-package container
+package cmap
 
 import (
 	"strconv"
@@ -13,12 +13,12 @@ type Animal struct {
 }
 
 func TestNewCMap(t *testing.T) {
-	cm := NewCMap()
+	cm := New()
 	assert.NotNil(t, cm)
 }
 
 func TestCMap_Set_Get(t *testing.T) {
-	cm := NewCMap()
+	cm := New()
 	elephant := Animal{"elephant"}
 	cm.Set("elephant", elephant)
 
@@ -32,7 +32,7 @@ func TestCMap_Set_Get(t *testing.T) {
 }
 
 func TestCMap_Exist(t *testing.T) {
-	cm := NewCMap()
+	cm := New()
 	elephant := Animal{"elephant"}
 	cm.Set("elephant", elephant)
 
@@ -41,7 +41,7 @@ func TestCMap_Exist(t *testing.T) {
 }
 
 func TestCMap_Remove(t *testing.T) {
-	cm := NewCMap()
+	cm := New()
 	elephant := Animal{"elephant"}
 	cm.Set("elephant", elephant)
 	assert.Equal(t, true, cm.Exist(elephant.name))
@@ -52,7 +52,7 @@ func TestCMap_Remove(t *testing.T) {
 
 func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 	loopN := 100
-	cm := NewCMap()
+	cm := New()
 	start := sync.WaitGroup{}
 	start.Add(1)
 	end := sync.WaitGroup{}
@@ -68,7 +68,6 @@ func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 	end.Wait()
 	assert.NotEqual(t, loopN, cm.Count())
 }
-
 
 // TestConcurrentFail will result in -- fatal error: concurrent map writes
 // It should be ignored, because it cannot be caught by recover()

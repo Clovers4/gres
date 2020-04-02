@@ -108,7 +108,7 @@ func NewServer(opt ...ServerOption) *Server {
 	}
 	srv.db = make([]*engine.DB, srv.opts.dbnum)
 	for i := 0; i < opts.dbnum; i++ {
-		srv.db[i] = engine.NewDB()
+		srv.db[i] = engine.NewDB(true) //todo
 	}
 	return srv
 }

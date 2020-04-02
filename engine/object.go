@@ -32,45 +32,35 @@ var ObjKinds = map[ObjKind]string{
 
 type ObjEncoding byte
 
-const (
-	ObjDefault ObjEncoding = iota
-
-	ObjPlainBool
-	ObjPlainInt8
-	ObjPlainInt16
-	ObjPlainInt32
-	ObjPlainInt64
-	ObjPlainUint8
-	ObjPlainUint16
-	ObjPlainUint32
-	ObjPlainUint64
-	ObjPlainFloat32
-	ObjPlainFloat64
-	ObjPlainString
-)
-
 type Object struct {
-	Kind     ObjKind
-	Encoding ObjEncoding
-	Data     interface{}
+	Kind ObjKind
+	Data interface{}
 }
 
-func newObject(kind ObjKind, encoding ObjEncoding, data interface{}) *Object {
+func newObject(kind ObjKind, data interface{}) *Object {
 	return &Object{
-		Kind:     kind,
-		Encoding: encoding,
-		Data:     data,
+		Kind: kind,
+		Data: data,
 	}
 }
 
 func PlainObject(any interface{}) *Object {
-	// todo
-	return newObject(ObjPlain, ObjDefault, any)
+	return newObject(ObjPlain, any)
 }
 
 func ListObject() *Object {
 	cls := list.New()
-	return newObject(ObjList, ObjDefault, cls)
+	return newObject(ObjList, cls)
+}
+
+func SetObject() *Object {
+	m := make(map[string]bool)
+	return newObject(ObjSet, m)
+}
+
+func HashObject() *Object {
+	m := make(map[string]interface{})
+	return newObject(ObjHash, m)
 }
 
 func (obj *Object) Plain() string {

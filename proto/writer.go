@@ -33,12 +33,7 @@ func (w *Writer) WriteObj(obj *engine.Object) error {
 		return err
 	}
 
-	err = w.wr.WriteByte(byte(obj.Encoding))
-	if err != nil {
-		return err
-	}
-
-	err = w.writeObjData(obj.Data)
+	err = w.writeData(obj.Data)
 	if err != nil {
 		return err
 	}
@@ -46,17 +41,8 @@ func (w *Writer) WriteObj(obj *engine.Object) error {
 	return nil
 }
 
-func (w *Writer) writeLen(n int) error {
-	w.lenBuf = strconv.AppendUint(w.lenBuf[:0], uint64(n), 10)
-	w.lenBuf = append(w.lenBuf, '\r', '\n')
-	_, err := w.wr.Write(w.lenBuf)
-	return err
-}
-
-func (w *Writer) writeObjData(v interface{}) error {
+func (w *Writer) writeData(v interface{}) error {
 	switch v := v.(type) {
-	case nil:
-		return w.string("")
 	case string:
 		return w.string(v)
 	case []byte:
@@ -92,12 +78,18 @@ func (w *Writer) writeObjData(v interface{}) error {
 		return w.wr.WriteByte(0)
 	case list.List:
 		ls := list.List(v)
-		for e := l.Front(); e != nil; e = e.Next() {
-			fmt.Println(e.Value)
+		for e := ls.Front(); e != nil; e = e.Next() {
+			w.writeData(e.Value)
 		}
-	default:
-		return fmt.Errorf("redis: can't marshal %T (implement encoding.BinaryMarshaler)", v)
 	}
+	return fmt.Errorf("redis: can't marshal %T (implement encoding.BinaryMarshaler)", v)
+}
+
+func (w *Writer) writeLen(n int) error {
+	w.lenBuf = strconv.AppendUint(w.lenBuf[:0], uint64(n), 10)
+	w.lenBuf = append(w.lenBuf, '\r', '\n')
+	_, err := w.wr.Write(w.lenBuf)
+	return err
 }
 
 func (w *Writer) bytes(b []byte) error {

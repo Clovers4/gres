@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"github.com/clovers4/gres/container"
+	"github.com/clovers4/gres/container/cmap"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -17,17 +17,17 @@ const FilenameFormat = "gres_%v"
 const FilenameRegex = "gres_*"
 const Version int32 = 1
 
-var expunged = newObject(ObjPlain, ObjDefault, "expunged")
+var expunged = newObject(ObjPlain, "expunged")
 
 type DB struct {
 	persist  bool // 是否要持久化
 	filename string
 
-	cleanMap *container.CMap // 正常情况下, 往该 map 中进行存取
+	cleanMap *cmap.CMap // 正常情况下, 往该 map 中进行存取
 
 	onSave    bool // 持久化中
 	dirtyLock sync.RWMutex
-	dirtyMap  *container.CMap // 持久化中, 新数据存入该 map
+	dirtyMap  *cmap.CMap // 持久化中, 新数据存入该 map
 }
 
 func NewDB(persist bool) *DB {
@@ -38,7 +38,7 @@ func NewDB(persist bool) *DB {
 	return &DB{
 		persist: persist,
 
-		cleanMap: container.NewCMap(),
+		cleanMap: cmap.New(),
 	}
 }
 
@@ -154,7 +154,7 @@ func (db *DB) loadFile() error {
 func (db *DB) startSave() {
 	db.dirtyLock.Lock()
 	db.onSave = true
-	db.dirtyMap = container.NewCMap()
+	db.dirtyMap = cmap.New()
 }
 
 func (db *DB) endSave() {

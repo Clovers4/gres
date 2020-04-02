@@ -1,4 +1,4 @@
-package container
+package cmap
 
 import (
 	"strconv"
@@ -19,7 +19,7 @@ func BenchmarkHash(b *testing.B) {
 }
 
 func BenchmarkCMapSet(b *testing.B) {
-	m := NewCMap()
+	m := New()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -36,7 +36,7 @@ func BenchmarkSyncMap_Set(b *testing.B) {
 }
 
 func BenchmarkCMap_SetExisted(b *testing.B) {
-	m := NewCMap()
+	m := New()
 	m.Set("key", "value")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -54,7 +54,7 @@ func BenchmarkSyncMap_SetExisted(b *testing.B) {
 }
 
 func BenchmarkCMap_MultiSetDifferent(b *testing.B) {
-	m := NewCMap()
+	m := New()
 	finished := make(chan struct{}, b.N)
 	_, set := CMapGetSet(m, finished)
 	b.ResetTimer()
@@ -81,7 +81,7 @@ func BenchmarkSyncMap_MultiSetDifferent(b *testing.B) {
 }
 
 func BenchmarkCMap_MultiSetSame(b *testing.B) {
-	m := NewCMap()
+	m := New()
 	finished := make(chan struct{}, b.N)
 	_, set := CMapGetSet(m, finished)
 	m.Set("key", "value")
@@ -109,7 +109,7 @@ func BenchmarkSyncMap_MultiSetSame(b *testing.B) {
 }
 
 func BenchmarkCMap_MultiGetSame(b *testing.B) {
-	m := NewCMap()
+	m := New()
 	finished := make(chan struct{}, b.N)
 	get, _ := CMapGetSet(m, finished)
 	m.Set("key", "value")
@@ -137,7 +137,7 @@ func BenchmarkSyncMap_MultiGetSame(b *testing.B) {
 }
 
 func BenchmarkCMap_MultiGetSetDifferent(b *testing.B) {
-	m := NewCMap()
+	m := New()
 	finished := make(chan struct{}, 2*b.N)
 	get, set := CMapGetSet(m, finished)
 	m.Set("-1", "value")
@@ -166,9 +166,8 @@ func BenchmarkSyncMap_MultiGetSetDifferent(b *testing.B) {
 	}
 }
 
-
 func BenchmarkCMap_MultiGetSetBlock(b *testing.B) {
-	m := NewCMap()
+	m := New()
 	finished := make(chan struct{}, 2*b.N)
 	get, set := CMapGetSet(m, finished)
 	for i := 0; i < b.N; i++ {

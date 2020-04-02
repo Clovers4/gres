@@ -1,4 +1,4 @@
-package container
+package cmap
 
 import (
 	fnv2 "hash/fnv"
@@ -17,7 +17,7 @@ type CMap struct {
 	segments []*cmapSegment
 }
 
-func NewCMap() *CMap {
+func New() *CMap {
 	cm := &CMap{
 		segments: make([]*cmapSegment, defaultSegmentCount),
 	}
