@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/clovers4/gres/util"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -26,16 +27,39 @@ func TestByte(t *testing.T) {
 }
 
 func TestWriteByBinary(t *testing.T) {
+	var err error
 	buf := &bytes.Buffer{}
 
-	num := "asdasd"
-	err := binary.Write(buf, binary.LittleEndian, num)
+	s1 := "asdasd"
+	b1 := util.StringToBytes(s1)
+	num := int64(2232331)
+
+	fmt.Println(b1)
+
+	err = binary.Write(buf, binary.BigEndian, b1)
 	assert.Nil(t, err)
 	fmt.Println(buf.Bytes())
 
-	var num2 string
-	b := bytes.NewReader(buf.Bytes())
-	binary.Read(b, binary.LittleEndian, &num2)
+	err = binary.Write(buf, binary.BigEndian, num)
+	assert.Nil(t, err)
+	fmt.Println(buf.Bytes())
+
+	var s2 string
+	var b2 []byte
+	var num2 int64
+	fmt.Println(buf.Bytes()[:len(b1)])
+	b := bytes.NewReader(buf.Bytes()[:len(b1)])
+	err = binary.Read(b, binary.LittleEndian, &b2)
+	fmt.Println("b2", b2)
+	assert.Nil(t, err)
+	fmt.Println(buf.Bytes())
+
+	err = binary.Read(b, binary.LittleEndian, &num2)
+	assert.Nil(t, err)
+	fmt.Println(buf.Bytes())
+
+	s2 = util.BytesToString(b2)
+	fmt.Println(s1, s2)
 	fmt.Println(num, num2)
 
 }

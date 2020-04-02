@@ -1,13 +1,14 @@
 package zset
 
 import (
-	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/clovers4/gres/container/zset/skiplist"
 	"github.com/clovers4/gres/util"
+	"io"
 )
 
-var DefaultByteOrder = binary.LittleEndian
+var DefaultByteOrder = binary.BigEndian
 
 // effective, so dont support concurrent ops.
 type ZSet struct {
@@ -63,32 +64,56 @@ func (zs *ZSet) Length() int {
 	return zs.skiplist.Length() // can also use len(zs.m), but maybe skiplist.Length() is more fast
 }
 
-func (zs *ZSet) Marshal() ([]byte, error) {
-	buf := new(bytes.Buffer)
-
+func (zs *ZSet) Marshal(w io.Writer) error {
 	// write total. the total must > 0
 	total := zs.Length()
-	if err := binary.Write(buf, DefaultByteOrder, int64(total)); err != nil {
-		return nil, err
+	if err := binary.Write(w, DefaultByteOrder, int64(total)); err != nil {
+		return err
 	}
 
 	// loop write score and val
 	for n := zs.Rank(1); n != nil; n = n.Next() {
-		if err := binary.Write(buf, DefaultByteOrder, n.Score()); err != nil {
-			return nil, err
+		if err := binary.Write(w, DefaultByteOrder, n.Score()); err != nil {
+			return err
 		}
 
 		val := util.StringToBytes(n.Val())
-		if err := binary.Write(buf, DefaultByteOrder, len(val)); err != nil {
-			return nil, err
+		if err := binary.Write(w, DefaultByteOrder, int64(len(val))); err != nil {
+			return err
 		}
-		if err := binary.Write(buf, DefaultByteOrder, val); err != nil {
-			return nil, err
+		if err := binary.Write(w, DefaultByteOrder, val); err != nil {
+			return err
 		}
 	}
-	return buf.Bytes(), nil
+	return nil
 }
 
-func (zs *ZSet) Unmarshal(b []byte) {
+func (zs *ZSet) Unmarshal(r io.Reader) error {
+	var total int64
+	if err := binary.Read(r, DefaultByteOrder, &total); err != nil {
+		return err
+	}
 
+	fmt.Println("total", total)
+	for i := 0; i < int(total); i++ {
+		var score float64
+		if err := binary.Read(r, DefaultByteOrder, &score); err != nil {
+			return err
+		}
+		fmt.Println("score", score)
+
+		var len int64
+		if err := binary.Read(r, DefaultByteOrder, &len); err != nil {
+			return err
+		}
+
+		bs := make([]byte, len)
+		if _, err := io.ReadFull(r, bs); err != nil {
+			return err
+		}
+
+		val := util.BytesToString(bs)
+		zs.Add(score, val)
+	}
+	return nil
 }
