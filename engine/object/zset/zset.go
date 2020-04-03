@@ -2,10 +2,10 @@ package zset
 
 import (
 	"encoding/binary"
-	"fmt"
-	"github.com/clovers4/gres/container/zset/skiplist"
-	"github.com/clovers4/gres/util"
+	"github.com/clovers4/gres/engine/object/zset/skiplist"
 	"io"
+
+	"github.com/clovers4/gres/util"
 )
 
 var DefaultByteOrder = binary.BigEndian
@@ -56,6 +56,11 @@ func (zs *ZSet) Delete(val string) {
 	}
 }
 
+func (zs *ZSet) Get(val string) (float64, bool) {
+	score, ok := zs.m[val]
+	return score, ok
+}
+
 func (zs *ZSet) Rank(rank int) *skiplist.SkiplistNode {
 	return zs.skiplist.GetNodeByRank(rank)
 }
@@ -67,21 +72,17 @@ func (zs *ZSet) Length() int {
 func (zs *ZSet) Marshal(w io.Writer) error {
 	// write total. the total must > 0
 	total := zs.Length()
-	if err := binary.Write(w, DefaultByteOrder, int64(total)); err != nil {
+	if err := util.Write(w, int64(total)); err != nil {
 		return err
 	}
 
 	// loop write score and val
 	for n := zs.Rank(1); n != nil; n = n.Next() {
-		if err := binary.Write(w, DefaultByteOrder, n.Score()); err != nil {
+		if err := util.Write(w, n.Score()); err != nil {
 			return err
 		}
 
-		val := util.StringToBytes(n.Val())
-		if err := binary.Write(w, DefaultByteOrder, int64(len(val))); err != nil {
-			return err
-		}
-		if err := binary.Write(w, DefaultByteOrder, val); err != nil {
+		if err := util.Write(w, n.Val()); err != nil {
 			return err
 		}
 	}
@@ -90,29 +91,20 @@ func (zs *ZSet) Marshal(w io.Writer) error {
 
 func (zs *ZSet) Unmarshal(r io.Reader) error {
 	var total int64
-	if err := binary.Read(r, DefaultByteOrder, &total); err != nil {
+	if err := util.Read(r, &total); err != nil {
 		return err
 	}
 
-	fmt.Println("total", total)
 	for i := 0; i < int(total); i++ {
 		var score float64
-		if err := binary.Read(r, DefaultByteOrder, &score); err != nil {
-			return err
-		}
-		fmt.Println("score", score)
-
-		var len int64
-		if err := binary.Read(r, DefaultByteOrder, &len); err != nil {
+		if err := util.Read(r, &score); err != nil {
 			return err
 		}
 
-		bs := make([]byte, len)
-		if _, err := io.ReadFull(r, bs); err != nil {
+		var val string
+		if err := util.Read(r, &val); err != nil {
 			return err
 		}
-
-		val := util.BytesToString(bs)
 		zs.Add(score, val)
 	}
 	return nil

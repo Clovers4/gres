@@ -1,11 +1,10 @@
-package engine
+package object
 
 import (
-	"bytes"
 	"container/list"
-	"encoding/binary"
 	"encoding/gob"
 	"fmt"
+	"github.com/clovers4/gres/engine/object/plain"
 )
 
 func init() {
@@ -63,11 +62,8 @@ func HashObject() *Object {
 	return newObject(ObjHash, m)
 }
 
-func (obj *Object) Plain() string {
-	if obj.Data != nil {
-		return fmt.Sprintf("%v", obj.Data)
-	}
-	return ""
+func (obj *Object) Plain() *plain.Plain {
+	return obj.Data.(*plain.Plain)
 }
 
 func (obj *Object) List() *list.List {
@@ -79,45 +75,4 @@ func (obj *Object) List() *list.List {
 
 func (obj *Object) String() string {
 	return fmt.Sprintf("[%v] %v", ObjKinds[obj.Kind], obj.Data)
-}
-
-func MarshalObj(obj *Object) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	encoder := gob.NewEncoder(buf)
-	err := encoder.Encode(obj)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func MarshalObjString(obj *Object) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.LittleEndian, obj.Data)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func UnmarshalObj(b []byte) (*Object, error) {
-	buf := bytes.NewBuffer(b)
-	decoder := gob.NewDecoder(buf)
-
-	obj := &Object{}
-	err := decoder.Decode(obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
-}
-
-func UnmarshalObjString(b []byte) (*Object, error) {
-	r := bytes.NewReader(b)
-	obj := &Object{}
-	if err := binary.Read(r, binary.LittleEndian, &obj.Data); err != nil {
-		return nil, err
-
-	}
-	return obj, nil
 }

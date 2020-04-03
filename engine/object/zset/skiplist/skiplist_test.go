@@ -2,11 +2,12 @@ package skiplist
 
 import (
 	"fmt"
+	"github.com/clovers4/gres/engine"
 	"testing"
 )
 
 func TestSkiplist(t *testing.T) {
-	sl := New()
+	sl := engine.New()
 	sl.Insert(1.0, "a")
 	sl.Insert(1.0, "a22")
 	sl.Insert(1.0, "a")

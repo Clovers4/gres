@@ -1,6 +1,7 @@
 package cmap
 
 import (
+	"github.com/clovers4/gres/engine"
 	"strconv"
 	"sync"
 	"testing"
@@ -13,12 +14,12 @@ type Animal struct {
 }
 
 func TestNewCMap(t *testing.T) {
-	cm := New()
+	cm := engine.New()
 	assert.NotNil(t, cm)
 }
 
 func TestCMap_Set_Get(t *testing.T) {
-	cm := New()
+	cm := engine.New()
 	elephant := Animal{"elephant"}
 	cm.Set("elephant", elephant)
 
@@ -32,7 +33,7 @@ func TestCMap_Set_Get(t *testing.T) {
 }
 
 func TestCMap_Exist(t *testing.T) {
-	cm := New()
+	cm := engine.New()
 	elephant := Animal{"elephant"}
 	cm.Set("elephant", elephant)
 
@@ -41,7 +42,7 @@ func TestCMap_Exist(t *testing.T) {
 }
 
 func TestCMap_Remove(t *testing.T) {
-	cm := New()
+	cm := engine.New()
 	elephant := Animal{"elephant"}
 	cm.Set("elephant", elephant)
 	assert.Equal(t, true, cm.Exist(elephant.name))
@@ -52,7 +53,7 @@ func TestCMap_Remove(t *testing.T) {
 
 func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 	loopN := 100
-	cm := New()
+	cm := engine.New()
 	start := sync.WaitGroup{}
 	start.Add(1)
 	end := sync.WaitGroup{}

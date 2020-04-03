@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"github.com/clovers4/gres/container/cmap"
+	"github.com/clovers4/gres/engine/object"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -17,17 +17,17 @@ const FilenameFormat = "gres_%v"
 const FilenameRegex = "gres_*"
 const Version int32 = 1
 
-var expunged = newObject(ObjPlain, "expunged")
+var expunged = object.newObject(object.ObjPlain, "expunged")
 
 type DB struct {
 	persist  bool // 是否要持久化
 	filename string
 
-	cleanMap *cmap.CMap // 正常情况下, 往该 map 中进行存取
+	cleanMap *CMap // 正常情况下, 往该 map 中进行存取
 
 	onSave    bool // 持久化中
 	dirtyLock sync.RWMutex
-	dirtyMap  *cmap.CMap // 持久化中, 新数据存入该 map
+	dirtyMap  *CMap // 持久化中, 新数据存入该 map
 }
 
 func NewDB(persist bool) *DB {
@@ -38,11 +38,11 @@ func NewDB(persist bool) *DB {
 	return &DB{
 		persist: persist,
 
-		cleanMap: cmap.New(),
+		cleanMap: New(),
 	}
 }
 
-func (db *DB) set(key string, obj *Object) *Object {
+func (db *DB) set(key string, obj *object.Object) *object.Object {
 	db.dirtyLock.RLock()
 	defer db.dirtyLock.RUnlock()
 
@@ -52,12 +52,12 @@ func (db *DB) set(key string, obj *Object) *Object {
 	}
 
 	if oldValue, existed := targetMap.Set(key, obj); existed {
-		return oldValue.(*Object)
+		return oldValue.(*object.Object)
 	}
 	return nil
 }
 
-func (db *DB) remove(key string) *Object {
+func (db *DB) remove(key string) *object.Object {
 	db.dirtyLock.RLock()
 	defer db.dirtyLock.RUnlock()
 
@@ -65,24 +65,24 @@ func (db *DB) remove(key string) *Object {
 	if db.onSave {
 		// 设置 expunged 作为空标志位
 		if oldValue, existed := db.dirtyMap.Set(key, expunged); existed {
-			return oldValue.(*Object)
+			return oldValue.(*object.Object)
 		}
 
 		// 从 cleanMap 读取原始值
 		if oldValue, existed := db.cleanMap.Get(key); existed {
-			return oldValue.(*Object)
+			return oldValue.(*object.Object)
 		}
 		return nil
 	}
 
 	// 非持久化中
 	if oldValue, existed := db.cleanMap.Remove(key); existed {
-		return oldValue.(*Object)
+		return oldValue.(*object.Object)
 	}
 	return nil
 }
 
-func (db *DB) get(key string) *Object {
+func (db *DB) get(key string) *object.Object {
 	db.dirtyLock.RLock()
 	defer db.dirtyLock.RUnlock()
 
@@ -93,7 +93,7 @@ func (db *DB) get(key string) *Object {
 			if oldValue == expunged {
 				return nil
 			}
-			return oldValue.(*Object)
+			return oldValue.(*object.Object)
 		}
 	}
 
@@ -102,7 +102,7 @@ func (db *DB) get(key string) *Object {
 	if !ok {
 		return nil
 	}
-	return v.(*Object)
+	return v.(*object.Object)
 }
 
 func (db *DB) loadFile() error {
@@ -154,7 +154,7 @@ func (db *DB) loadFile() error {
 func (db *DB) startSave() {
 	db.dirtyLock.Lock()
 	db.onSave = true
-	db.dirtyMap = cmap.New()
+	db.dirtyMap = New()
 }
 
 func (db *DB) endSave() {
@@ -163,7 +163,7 @@ func (db *DB) endSave() {
 	db.dirtyMap = nil
 }
 
-func (db *DB) CheckKind(key string, kind ObjKind) bool {
+func (db *DB) CheckKind(key string, kind object.ObjKind) bool {
 	obj := db.get(key)
 	if obj == nil {
 		return true

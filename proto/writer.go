@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"container/list"
 	"fmt"
+	"github.com/clovers4/gres/engine/object"
 	"io"
 	"strconv"
 
-	"github.com/clovers4/gres/engine"
 	"github.com/clovers4/gres/util"
 )
 
@@ -27,7 +27,7 @@ func NewWriter(wr io.Writer) *Writer {
 	}
 }
 
-func (w *Writer) WriteObj(obj *engine.Object) error {
+func (w *Writer) WriteObj(obj *object.Object) error {
 	err := w.wr.WriteByte(byte(obj.Kind))
 	if err != nil {
 		return err
