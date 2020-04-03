@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"github.com/clovers4/gres/engine/cmap"
 	"github.com/clovers4/gres/engine/object"
 	"path/filepath"
 	"sort"
@@ -17,17 +18,17 @@ const FilenameFormat = "gres_%v"
 const FilenameRegex = "gres_*"
 const Version int32 = 1
 
-var expunged = object.newObject(object.ObjPlain, "expunged")
+var expunged = object.NilObject()
 
 type DB struct {
 	persist  bool // 是否要持久化
 	filename string
 
-	cleanMap *CMap // 正常情况下, 往该 map 中进行存取
+	cleanMap *cmap.CMap // 正常情况下, 往该 map 中进行存取
 
 	onSave    bool // 持久化中
 	dirtyLock sync.RWMutex
-	dirtyMap  *CMap // 持久化中, 新数据存入该 map
+	dirtyMap  *cmap.CMap // 持久化中, 新数据存入该 map
 }
 
 func NewDB(persist bool) *DB {
@@ -38,7 +39,7 @@ func NewDB(persist bool) *DB {
 	return &DB{
 		persist: persist,
 
-		cleanMap: New(),
+		cleanMap: cmap.New(),
 	}
 }
 
@@ -154,7 +155,7 @@ func (db *DB) loadFile() error {
 func (db *DB) startSave() {
 	db.dirtyLock.Lock()
 	db.onSave = true
-	db.dirtyMap = New()
+	db.dirtyMap = cmap.New()
 }
 
 func (db *DB) endSave() {
@@ -164,11 +165,13 @@ func (db *DB) endSave() {
 }
 
 func (db *DB) CheckKind(key string, kind object.ObjKind) bool {
+
+	// todo:save mode
 	obj := db.get(key)
 	if obj == nil {
 		return true
 	}
-	if obj.Kind == kind {
+	if obj.Kind() == kind {
 		return true
 	}
 	return false

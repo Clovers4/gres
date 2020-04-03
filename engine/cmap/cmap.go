@@ -1,7 +1,9 @@
 package cmap
 
 import (
+	"fmt"
 	fnv2 "hash/fnv"
+	"sort"
 	"sync"
 )
 
@@ -9,8 +11,8 @@ const defaultSegmentCount = 32
 
 // todo: 动态调整
 type cmapSegment struct {
-	items        map[string]interface{}
-	sync.RWMutex // Read Write mutex, guards access to internal map.
+	items        map[string]interface{} // the value must be object
+	sync.RWMutex                        // Read Write mutex, guards access to internal map.
 }
 
 type CMap struct {
@@ -86,32 +88,82 @@ type KVPair struct {
 	Value interface{}
 }
 
-// Snapshot cannot get real consistent data map expect in locked.
-func (cm *CMap) Snapshot() (int, <-chan KVPair) {
-	count := cm.Count()
-	ch := make(chan KVPair)
-	go func() {
-		wg := sync.WaitGroup{}
-		wg.Add(len(cm.segments))
-
-		for _, seg := range cm.segments {
-			go func(seg *cmapSegment) {
-				seg.RLock()
-				for key, val := range seg.items {
-					ch <- KVPair{key, val}
-				}
-				seg.RUnlock()
-				wg.Done()
-			}(seg)
-		}
-		wg.Wait()
-		close(ch) //todo:?
-	}()
-	return count, ch
-}
-
 func hash(key string) uint32 {
 	h := fnv2.New32a()
 	h.Write([]byte(key))
 	return h.Sum32()
 }
+
+// Only for test
+func (cm *CMap) String() string {
+	var s string
+	s += "{"
+
+	var keys []string
+	for _, seg := range cm.segments {
+		seg.RLock()
+		defer seg.RUnlock()
+		for k := range seg.items {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		val, _ := cm.Get(key)
+		s += fmt.Sprintf("%v : %v, ", key, val)
+	}
+
+	s = s[:len(s)-2]
+	s += "}"
+	return s
+}
+
+//
+//// 实际上整个 Marshal 过程 cmap 都需要被锁定 or 保证只有一个
+//func (cm *CMap) Marshal(w io.Writer) error {
+//	// write total.
+//	total := cm.Count()
+//	if err := util.Write(w, int64(total)); err != nil {
+//		return err
+//	}
+//
+//	// loop write score and val
+//	for _, seg := range cm.segments {
+//		seg.RLock()
+//		defer seg.RUnlock()
+//		for key, obj := range seg.items {
+//			if err := util.Write(w, key); err != nil {
+//				return err
+//			}
+//
+//			v := obj.(serialize.Serializable)
+//			if err := v.Marshal(w); err != nil {
+//				return err
+//			}
+//		}
+//	}
+//	return nil
+//}
+//
+//func (cm *CMap) Unmarshal(r io.Reader) error {
+//	var total int64
+//	if err := util.Read(r, &total); err != nil {
+//		return err
+//	}
+//
+//	for i := 0; i < int(total); i++ {
+//		var val string
+//		if err := util.Read(r, &val); err != nil {
+//			return err
+//		}
+//
+//		obj := object.NilObject()
+//		if err := obj.Unmarshal(r); err != nil {
+//			return err
+//		}
+//
+//		cm.Set(val, obj)
+//	}
+//	return nil
+//}

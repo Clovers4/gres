@@ -1,8 +1,10 @@
 package set
 
 import (
+	"fmt"
 	"github.com/clovers4/gres/util"
 	"io"
+	"sort"
 )
 
 //todo
@@ -29,6 +31,25 @@ func (s *Set) Delete(val string) {
 
 func (s *Set) Length() int {
 	return len(s.m)
+}
+
+// Only for test
+func (s *Set) String() string {
+	var str string
+	str += "{"
+
+	var vals []string
+	for val := range s.m {
+		vals = append(vals, val)
+	}
+	sort.Strings(vals)
+
+	for _, val := range vals {
+		str += fmt.Sprintf("%v, ", val)
+	}
+	str = str[:len(str)-2]
+	str += "}"
+	return str
 }
 
 func (s *Set) Marshal(w io.Writer) error {

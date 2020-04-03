@@ -28,12 +28,12 @@ func NewWriter(wr io.Writer) *Writer {
 }
 
 func (w *Writer) WriteObj(obj *object.Object) error {
-	err := w.wr.WriteByte(byte(obj.Kind))
+	err := w.wr.WriteByte(byte(obj.kind))
 	if err != nil {
 		return err
 	}
 
-	err = w.writeData(obj.Data)
+	err = w.writeData(obj.data)
 	if err != nil {
 		return err
 	}

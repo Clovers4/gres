@@ -81,6 +81,7 @@ func TestList_Marshal(t *testing.T) {
 	err = newLs.Unmarshal(r)
 	assert.Equal(t, ls.Length(), newLs.Length())
 	assert.Equal(t, ls.String(), newLs.String())
+	fmt.Println(newLs)
 
 	for n, nn := ls.Front(), newLs.Front(); n != nil && nn != nil; n, nn = n.Next(), nn.Next() {
 		fmt.Println(n.Val(), nn.Val())

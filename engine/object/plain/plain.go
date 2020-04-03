@@ -23,7 +23,17 @@ func (p *Plain) Val() interface{} {
 	return p.val
 }
 
+// Only for test
+func (p *Plain) String() string {
+	return fmt.Sprintf("%v", p.val)
+}
+
 func (p *Plain) Marshal(w io.Writer) error {
+	// 经常使用 int 忘了转成 int64, 这里做一层防御
+	if v, ok := p.val.(int); ok {
+		p.val = int64(v)
+	}
+
 	kind := uint8(reflect.TypeOf(p.val).Kind())
 	if err := util.Write(w, kind); err != nil {
 		return err

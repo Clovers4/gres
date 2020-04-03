@@ -113,9 +113,12 @@ func (ls *List) Length() int {
 // Only for test
 func (ls *List) String() string {
 	var s string
+	s += "{"
 	for n := ls.Front(); n != nil; n = n.Next() {
 		s += fmt.Sprintf("%v, ", n.Val())
 	}
+	s = s[:len(s)-2]
+	s += "}"
 	return s
 }
 

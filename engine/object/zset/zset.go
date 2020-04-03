@@ -2,6 +2,7 @@ package zset
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/clovers4/gres/engine/object/zset/skiplist"
 	"io"
 
@@ -67,6 +68,19 @@ func (zs *ZSet) Rank(rank int) *skiplist.SkiplistNode {
 
 func (zs *ZSet) Length() int {
 	return zs.skiplist.Length() // can also use len(zs.m), but maybe skiplist.Length() is more fast
+}
+
+// Only for test
+func (zs *ZSet) String() string {
+	var s string
+	s += "{"
+	for n := zs.skiplist.Front(); n != nil; n = n.Next() {
+		s += fmt.Sprintf("%v : %v, ", n.Val(), n.Score())
+	}
+
+	s = s[:len(s)-2]
+	s += "}"
+	return s
 }
 
 func (zs *ZSet) Marshal(w io.Writer) error {
