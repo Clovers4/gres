@@ -1,7 +1,6 @@
 package skiplist
 
 import (
-	"github.com/clovers4/gres/engine"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -10,14 +9,14 @@ import (
 )
 
 func BenchmarkSkiplistSequenceInsert(b *testing.B) {
-	sl := engine.New()
+	sl := New()
 	for i := 0; i < b.N; i++ {
 		sl.Insert(float64(i), strconv.FormatInt(int64(i), 10))
 	}
 }
 
 func BenchmarkSkiplistRandomInsert(b *testing.B) {
-	sl := engine.New()
+	sl := New()
 	for i := 0; i < b.N; i++ {
 		sl.Insert(float64(i%10), strconv.FormatInt(int64(i), 10))
 	}

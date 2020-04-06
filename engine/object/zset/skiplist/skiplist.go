@@ -207,7 +207,11 @@ func (sl *Skiplist) End() *SkiplistNode {
 
 // rank start at 1, end at sl.length
 func (sl *Skiplist) GetNodeByRank(rank int) *SkiplistNode {
-	if rank == 0 || rank > sl.length {
+	if rank < 0 {
+		rank = sl.length + rank
+	}
+	rank++
+	if rank <= 0 || rank > sl.length {
 		return nil
 	}
 
@@ -223,6 +227,22 @@ func (sl *Skiplist) GetNodeByRank(rank int) *SkiplistNode {
 		}
 	}
 	return nil
+}
+
+// the rank start at 0, end at length-1
+func (sl *Skiplist) GetRankByScore(score float64) (rank int, existed bool) {
+	traversed := 0
+	n := sl.header
+	for i := sl.level - 1; i >= 0; i-- {
+		for n.levels[i].next != nil && n.levels[i].next.score <= score {
+			traversed += n.levels[i].span
+			n = n.levels[i].next
+		}
+		if n.score == score {
+			return traversed - 1, true
+		}
+	}
+	return -1, false
 }
 
 func (sl *Skiplist) randomLevel() int {

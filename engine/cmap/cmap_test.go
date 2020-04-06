@@ -1,6 +1,9 @@
 package cmap
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/clovers4/gres/engine/object"
 	"strconv"
 	"sync"
 	"testing"
@@ -76,9 +79,9 @@ func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 //	loopN := 100
 //	items := make(map[string]int)
 //	start := sync.WaitGroup{}
-//	start.Add(1)
+//	start.Set(1)
 //	end := sync.WaitGroup{}
-//	end.Add(loopN)
+//	end.Set(loopN)
 //	for i := 0; i < loopN; i++ {
 //		go func() {
 //			start.Wait()
@@ -91,37 +94,48 @@ func TestCMap_Count_ConcurrentSuccess(t *testing.T) {
 //	fmt.Println(len(items),items)
 //	assert.NotEqual(t, loopN, len(items))
 //}
-//
-//func TestCMap_Marshal(t *testing.T) {
-//	cm := New()
-//	cm.Set("plain-A", object.PlainObject("A-and"))
-//	cm.Set("plain-B", object.PlainObject("B-bb"))
-//
-//	lsObj := object.ListObject()
-//	ls, _ := lsObj.List()
-//	ls.RPush("C1")
-//	ls.RPush("C2")
-//	cm.Set("list-C", lsObj)
-//
-//	setObj := object.SetObject()
-//	set, _ := setObj.Set()
-//	set.Add("A")
-//	set.Add("B")
-//	cm.Set("set-D", setObj)
-//
-//	zsetObj := object.ZSetObject()
-//	zs, _ := zsetObj.ZSet()
-//	zs.Add(23, "ZS_A")
-//	zs.Add(23, "ZS_B")
-//	zs.Add(3, "ZS_C")
-//	cm.Set("zset-E", zsetObj)
-//
-//	hashObj := object.HashObject()
-//	ha, _ := hashObj.Hash()
-//	ha.Add("a", "b")
-//	ha.Add("b", 2)
-//	cm.Set("hash-F", hashObj)
-//
-//	fmt.Println(cm)
-//
-//}
+
+func TestCMap_Marshal(t *testing.T) {
+	cm := New()
+	cm.Set("plain-A", object.PlainObject("A-and"))
+	cm.Set("plain-B", object.PlainObject("B-bb"))
+
+	lsObj := object.ListObject()
+	ls, _ := lsObj.List()
+	ls.RPush("C1")
+	ls.RPush("C2")
+	cm.Set("list-C", lsObj)
+
+	setObj := object.SetObject()
+	set, _ := setObj.Set()
+	set.Add("A")
+	set.Add("B")
+	cm.Set("set-D", setObj)
+
+	zsetObj := object.ZSetObject()
+	zs, _ := zsetObj.ZSet()
+	zs.Add(23, "ZS_A")
+	zs.Add(23, "ZS_B")
+	zs.Add(3, "ZS_C")
+	cm.Set("zset-E", zsetObj)
+
+	hashObj := object.HashObject()
+	ha, _ := hashObj.Hash()
+	ha.Set("a", "b")
+	ha.Set("b", 2)
+	cm.Set("hash-F", hashObj)
+
+	fmt.Println(cm)
+
+	// marshal
+	buf := new(bytes.Buffer)
+	err := cm.Marshal(buf)
+	assert.Nil(t, err)
+
+	// unmarshal
+	newCm := New()
+	r := bytes.NewReader(buf.Bytes())
+	err = newCm.Unmarshal(r)
+	assert.Equal(t, cm.String(), newCm.String())
+	fmt.Println(newCm.String())
+}

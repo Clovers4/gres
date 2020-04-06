@@ -23,6 +23,12 @@ func (p *Plain) Val() interface{} {
 	return p.val
 }
 
+func (p *Plain) SetVal(val interface{}) interface{} {
+	old := p.val
+	p.val = val
+	return old
+}
+
 // Only for test
 func (p *Plain) String() string {
 	return fmt.Sprintf("%v", p.val)

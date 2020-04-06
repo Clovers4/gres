@@ -25,6 +25,12 @@ func (n *node) Prev() *node {
 	return n.prev
 }
 
+func (n *node) SetVal(val interface{}) interface{} {
+	old := n.val
+	n.val = val
+	return old
+}
+
 func (n *node) Val() interface{} {
 	return n.val
 }
@@ -106,6 +112,32 @@ func (ls *List) End() *node {
 	return ls.tail
 }
 
+// index start at 0
+func (ls *List) Index(index int) *node {
+	if index < 0 {
+		index = ls.Length() + index
+	}
+
+	if index < 0 || index >= ls.Length() {
+		return nil
+	}
+
+	// 从左向右遍历, 否则从右向左
+	var n *node
+	if index <= ls.Length()/2 {
+		n = ls.header
+		for i := 0; i < index; i++ {
+			n = n.Next()
+		}
+	} else {
+		n = ls.tail
+		for i := ls.Length() - 1; i > index; i-- {
+			n = n.Prev()
+		}
+	}
+	return n
+}
+
 func (ls *List) Length() int {
 	return ls.length
 }
@@ -117,7 +149,9 @@ func (ls *List) String() string {
 	for n := ls.Front(); n != nil; n = n.Next() {
 		s += fmt.Sprintf("%v, ", n.Val())
 	}
-	s = s[:len(s)-2]
+	if len(s) > 2 {
+		s = s[:len(s)-2]
+	}
 	s += "}"
 	return s
 }

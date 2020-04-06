@@ -9,7 +9,6 @@ import (
 var (
 	ErrUnknownCmd     = errors.New("ERR unknown command")
 	ErrWrongNumArgs   = errors.New("ERR wrong number of arguments for the command")
-	ErrWrongTypeOps = errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
 	ErrWrongTypeInt   = errors.New("ERR value is not an integer")
 	ErrInvalidDbIndex = errors.New("ERR invalid DB index")
 )
@@ -53,7 +52,6 @@ type Command interface {
 }
 
 type CommandReply struct {
-
 	value interface{}
 }
 

@@ -17,19 +17,52 @@ func New() *Hash {
 	}
 }
 
-func (h *Hash) Add(key string, val interface{}) (interface{}, bool) {
+func (h *Hash) Set(key string, val interface{}) (interface{}, bool) {
 	old, existed := h.m[key]
 	h.m[key] = val
 	return old, existed
 }
 
-func (h *Hash) Delete(key string) {
+func (h *Hash) Delete(key string) (interface{}, bool) {
+	old, existed := h.m[key]
 	delete(h.m, key)
+	return old, existed
 }
 
 func (h *Hash) Get(key string) (interface{}, bool) {
 	val, existed := h.m[key]
 	return val, existed
+}
+
+func (h *Hash) Exists(key string) bool {
+	_, existed := h.m[key]
+	return existed
+}
+
+func (h *Hash) Keys() []string {
+	var keys []string
+	for k := range h.m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func (h *Hash) Vals() []interface{} {
+	var vals []interface{}
+	for _, v := range h.m {
+		vals = append(vals, v)
+	}
+	return vals
+}
+
+// 单数是 key, 双数是 val
+func (h *Hash) KeyVals() []interface{} {
+	var kvs []interface{}
+	for k, v := range h.m {
+		kvs = append(kvs, k)
+		kvs = append(kvs, v)
+	}
+	return kvs
 }
 
 func (h *Hash) Length() int {
@@ -84,7 +117,7 @@ func (h *Hash) Unmarshal(r io.Reader) error {
 			return err
 		}
 
-		h.Add(key, p.Val())
+		h.Set(key, p.Val())
 	}
 	return nil
 }

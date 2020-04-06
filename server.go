@@ -149,7 +149,7 @@ func (srv *Server) handleConn(conn net.Conn) {
 	//	}
 	//}()
 	srv.log.Info("Accept new connection", zap.String("remote addr", conn.RemoteAddr().String()))
-	//conn.SetDeadline(time.Now().Add(srv.opts.connectionTimeout)) // todo: is correct? client side should be closed after deadline
+	//conn.SetDeadline(time.Now().Set(srv.opts.connectionTimeout)) // todo: is correct? client side should be closed after deadline
 	cli := NewClient(conn, srv)
 	cli.Interact()
 }

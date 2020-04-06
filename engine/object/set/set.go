@@ -2,6 +2,7 @@ package set
 
 import (
 	"fmt"
+	"github.com/clovers4/gres/engine/object/plain"
 	"github.com/clovers4/gres/util"
 	"io"
 	"sort"
@@ -12,21 +13,67 @@ import (
 // only support int8/int16/int32/int64 uint8/uint16/uint32/uint64 float32/float64 string
 // NOT support int/uint
 type Set struct {
-	m map[string]bool
+	m map[interface{}]bool
 }
 
 func New() *Set {
 	return &Set{
-		m: make(map[string]bool),
+		m: make(map[interface{}]bool),
 	}
 }
 
-func (s *Set) Add(val string) {
+func (s *Set) Add(val interface{}) {
 	s.m[val] = true
 }
 
-func (s *Set) Delete(val string) {
+func (s *Set) Delete(val interface{}) (interface{}, bool) {
+	old, existed := s.m[val]
 	delete(s.m, val)
+	return old, existed
+}
+
+func (s *Set) Exists(val interface{}) bool {
+	_, existed := s.m[val]
+	return existed
+}
+
+func (s *Set) Inter(s2 *Set) *Set {
+	s3 := New()
+	for val := range s.m {
+		s3.m[val] = true
+	}
+	for val := range s2.m {
+		s3.m[val] = true
+	}
+	return s3
+}
+
+func (s *Set) Union(s2 *Set) *Set {
+	s3 := New()
+	for val := range s.m {
+		if _, existed := s2.m[val]; existed {
+			s3.m[val] = true
+		}
+	}
+	return s3
+}
+
+func (s *Set) Diff(s2 *Set) *Set {
+	s3 := New()
+	for val := range s.m {
+		if _, existed := s2.m[val]; !existed {
+			s3.m[val] = true
+		}
+	}
+	return s3
+}
+
+func (s *Set) Vals() []interface{} {
+	var vals []interface{}
+	for val := range s.m {
+		vals = append(vals, val)
+	}
+	return vals
 }
 
 func (s *Set) Length() int {
@@ -40,13 +87,14 @@ func (s *Set) String() string {
 
 	var vals []string
 	for val := range s.m {
-		vals = append(vals, val)
+		vals = append(vals, fmt.Sprintf("%v", val))
 	}
-	sort.Strings(vals)
 
+	sort.Strings(vals)
 	for _, val := range vals {
 		str += fmt.Sprintf("%v, ", val)
 	}
+
 	str = str[:len(str)-2]
 	str += "}"
 	return str
@@ -60,7 +108,9 @@ func (s *Set) Marshal(w io.Writer) error {
 	}
 
 	for val := range s.m {
-		if err := util.Write(w, val); err != nil {
+		// use Plain to marshal
+		p := plain.New(val)
+		if err := p.Marshal(w); err != nil {
 			return err
 		}
 	}
@@ -74,11 +124,11 @@ func (s *Set) Unmarshal(r io.Reader) error {
 	}
 
 	for i := 0; i < int(total); i++ {
-		var val string
-		if err := util.Read(r, &val); err != nil {
+		p := plain.New(nil)
+		if err := p.Unmarshal(r); err != nil {
 			return err
 		}
-		s.m[val] = true
+		s.m[p.Val()] = true
 	}
 	return nil
 }

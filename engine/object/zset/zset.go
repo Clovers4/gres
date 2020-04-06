@@ -24,45 +24,55 @@ func New() *ZSet {
 	}
 }
 
-func (zs *ZSet) Add(score float64, val string) {
+func (zs *ZSet) Add(score float64, member string) {
 	// found
-	if curScore, ok := zs.m[val]; ok {
+	if curScore, ok := zs.m[member]; ok {
 		if curScore != score {
-			zs.m[val] = score
-			zs.skiplist.UpdateScore(curScore, score, val)
+			zs.m[member] = score
+			zs.skiplist.UpdateScore(curScore, score, member)
 		}
 		return
 	}
 	// not found
-	zs.m[val] = score
-	zs.skiplist.Insert(score, val)
+	zs.m[member] = score
+	zs.skiplist.Insert(score, member)
 }
 
-func (zs *ZSet) Incr(val string) {
+func (zs *ZSet) Incr(member string) {
 	// found
-	if curScore, ok := zs.m[val]; ok {
-		zs.m[val]++
-		zs.skiplist.UpdateScore(curScore, curScore+1, val)
+	if curScore, ok := zs.m[member]; ok {
+		zs.m[member]++
+		zs.skiplist.UpdateScore(curScore, curScore+1, member)
 	}
 	// not found
-	zs.m[val] = 1
-	zs.skiplist.Insert(1, val)
+	zs.m[member] = 1
+	zs.skiplist.Insert(1, member)
 }
 
-func (zs *ZSet) Delete(val string) {
+func (zs *ZSet) Delete(member string) (float64, bool) {
 	// found
-	if curScore, ok := zs.m[val]; ok {
-		delete(zs.m, val)
-		zs.skiplist.Delete(curScore, val)
+	if curScore, ok := zs.m[member]; ok {
+		delete(zs.m, member)
+		zs.skiplist.Delete(curScore, member)
+		return curScore, true
 	}
+	return 0, false
 }
 
-func (zs *ZSet) Get(val string) (float64, bool) {
-	score, ok := zs.m[val]
+func (zs *ZSet) Get(member string) (float64, bool) {
+	score, ok := zs.m[member]
 	return score, ok
 }
 
-func (zs *ZSet) Rank(rank int) *skiplist.SkiplistNode {
+func (zs *ZSet) GetRankByMember(member string) (rank int, existed bool) {
+	score, existed := zs.m[member]
+	if !existed {
+		return -1, false
+	}
+	return zs.skiplist.GetRankByScore(score)
+}
+
+func (zs *ZSet) GetNodeByRank(rank int) *skiplist.SkiplistNode {
 	return zs.skiplist.GetNodeByRank(rank)
 }
 
@@ -78,7 +88,9 @@ func (zs *ZSet) String() string {
 		s += fmt.Sprintf("%v : %v, ", n.Val(), n.Score())
 	}
 
-	s = s[:len(s)-2]
+	if len(s) > 2 {
+		s = s[:len(s)-2]
+	}
 	s += "}"
 	return s
 }
@@ -91,7 +103,7 @@ func (zs *ZSet) Marshal(w io.Writer) error {
 	}
 
 	// loop write score and val
-	for n := zs.Rank(1); n != nil; n = n.Next() {
+	for n := zs.GetNodeByRank(1); n != nil; n = n.Next() {
 		if err := util.Write(w, n.Score()); err != nil {
 			return err
 		}

@@ -1,11 +1,19 @@
 package engine
 
 import (
-	"github.com/clovers4/gres/engine/cmap"
-	"github.com/clovers4/gres/engine/object"
+	"bufio"
+	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"sync"
+	"time"
+
+	"github.com/clovers4/gres/engine/cmap"
+	"github.com/clovers4/gres/engine/object"
+	"github.com/clovers4/gres/util"
 )
 
 const (
@@ -14,11 +22,23 @@ const (
 	MB = 1024 * KB
 )
 
-const FilenameFormat = "gres_%v"
-const FilenameRegex = "gres_*"
-const Version int32 = 1
+var (
+	// file
+	ErrCRCNotEqual        = errors.New("CRC is not equal to the expect, the file may be broken")
+	ErrUnexpectHeader     = errors.New("the header is unexpect")
+	ErrUnsupportedVersion = errors.New("the version is unsupported")
 
-var expunged = object.NilObject()
+	// commands
+	ErrWrongTypeOps = errors.New("WRONGTYPE Operation against a key holding the wrong kind of value")
+)
+
+const (
+	FilenamePrefix = "gres_"
+	FilenameFormat = FilenamePrefix + "%v.db"
+	FilenameRegex  = FilenamePrefix + "*"
+	GRES           = "GRES"
+	DBVersion      = "0.0.1"
+)
 
 type DB struct {
 	persist  bool // 是否要持久化
@@ -64,8 +84,8 @@ func (db *DB) remove(key string) *object.Object {
 
 	// 持久化中
 	if db.onSave {
-		// 设置 expunged 作为空标志位
-		if oldValue, existed := db.dirtyMap.Set(key, expunged); existed {
+		// 设置 Expunged 作为空标志位
+		if oldValue, existed := db.dirtyMap.Set(key, object.Expunged); existed {
 			return oldValue.(*object.Object)
 		}
 
@@ -89,9 +109,9 @@ func (db *DB) get(key string) *object.Object {
 
 	// 持久化中
 	if db.onSave {
-		// 先从 dirtyMap 读, 若为 expunged, 则认为已删除
+		// 先从 dirtyMap 读, 若为 Expunged, 则认为已删除
 		if oldValue, existed := db.dirtyMap.Get(key); existed {
-			if oldValue == expunged {
+			if oldValue == object.Expunged {
 				return nil
 			}
 			return oldValue.(*object.Object)
@@ -106,84 +126,193 @@ func (db *DB) get(key string) *object.Object {
 	return v.(*object.Object)
 }
 
-func (db *DB) loadFile() error {
-	// 爬文件(默认已经是排序好的)
-	files, err := filepath.Glob("my_*")
-	if err != nil {
-		return err
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(files)))
-
-	// 校验文件
-	return nil
-}
-
 // 保证即使持久化过程中断电, 本地文件保存的数据仍具有一致性,
-//func (db *DB) Save() error {
-//	db.startSave()
-//	defer db.endSave()
-//
-//	newFilename := fmt.Sprintf(FilenameFormat, time.Now().Unix())
-//	newFile, err := os.OpenFile(newFilename, os.O_CREATE, 0666)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// write cleanMap to file
-//	count, kvCh := db.cleanMap.Snapshot()
-//	for i := 0; i < count; i++ {
-//		kv := <-kvCh
-//		k, v := kv.Key, kv.Value
-//
-//	}
-//
-//	// flush dirtyMap to cleanMap: 需要放在持久化完成之后
-//	dirtyCount, dirtyKvCh := db.dirtyMap.Snapshot()
-//	for i := 0; i < dirtyCount; i++ {
-//		kv := <-dirtyKvCh
-//		k, v := kv.Key, kv.Value
-//		if v == expunged {
-//			db.cleanMap.Remove(k)
-//		} else {
-//			db.cleanMap.Set(k, v)
-//		}
-//	}
-//
-//	return nil
-//}
-
-func (db *DB) startSave() {
+func (db *DB) Save() error {
 	db.dirtyLock.Lock()
 	db.onSave = true
 	db.dirtyMap = cmap.New()
-}
 
-func (db *DB) endSave() {
+	// open file
+	newFilename := fmt.Sprintf(FilenameFormat, time.Now().Unix())
+	newFile, err := os.OpenFile(newFilename, os.O_CREATE, 0666)
+	if err != nil {
+		db.onSave = false
+		db.dirtyMap = nil
+		db.dirtyLock.Unlock()
+		return err
+	}
+	defer newFile.Close()
 	db.dirtyLock.Unlock()
+
+	// save data to new file
+	err = db.save(newFile)
+
+	// end save
+	db.dirtyLock.Lock()
+	db.cleanMap.AddCMap(db.dirtyMap) // flush dirtyMap to cleanMap: 需要放在持久化完成之后. 此时, db 的 set/get 无法使用，直到完成
 	db.onSave = false
 	db.dirtyMap = nil
+
+	// 删除老文件
+	if err = os.Remove(db.filename); err != nil {
+		// todo:log
+	}
+	db.filename = newFilename
+	db.dirtyLock.Unlock()
+	return err
 }
 
-func (db *DB) CheckKind(key string, kind object.ObjKind) bool {
+func (db *DB) save(file *os.File) error {
+	var err error
 
-	// todo:save mode
+	// write cleanMap to file. Even if failed, needs to write dirtyMap to cleanMap
+	w := NewCRCWriter(bufio.NewWriter(file))
+
+	// write constant "GRES" and DB_VERSION
+	if err := util.Write(w, GRES); err != nil {
+		return err
+	}
+
+	// write DB_VERSION
+	if err := util.Write(w, DBVersion); err != nil {
+		return err
+	}
+
+	// write data
+	if err = db.cleanMap.Marshal(w); err != nil {
+		return err
+	}
+
+	// write crc
+	if err = w.WriteCRC(); err != nil {
+		return err
+	}
+
+	if err = w.Flush(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) readFromFile(filename string) error {
+	var err error
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	r := NewCRCReader(bufio.NewReader(file))
+
+	// read header
+	var gresFlag string
+	if err := util.Read(r, &gresFlag); err != nil {
+		return err
+	} else if gresFlag != GRES {
+		return ErrUnexpectHeader
+	}
+
+	// read version
+	var dbVersion string
+	if err := util.Read(r, &dbVersion); err != nil {
+		return err
+	} else if dbVersion != DBVersion {
+		return ErrUnsupportedVersion
+	}
+
+	// read cleanMap
+	if err = db.cleanMap.Unmarshal(r); err != nil {
+		return err
+	}
+
+	// read crc and check whether is equal to the expect
+	if equal, err := r.IsCRCEqual(); err != nil {
+		return err
+	} else if !equal {
+		return ErrCRCNotEqual
+	}
+	return nil
+}
+
+func (db *DB) ReadFromFile() error {
+	var err error
+	filenames, err := filepath.Glob(FilenameRegex)
+	if err != nil {
+		return err
+	}
+
+	// 如果持久化过程中断电 or 其他极端情况, 可能出现多个 .db 文件
+	var stamps []int
+	for _, filename := range filenames {
+		if len(filename) < len(FilenamePrefix) {
+			continue
+		}
+
+		num, err := strconv.Atoi(filename[len(FilenamePrefix) : len(filename)-3])
+		if err != nil {
+			//todo:
+			return err
+		}
+		stamps = append(stamps, num)
+	}
+
+	// 从最新的开始读取; 不做删除操作, 以便保留手动修复文件的可能性
+	sort.Sort(sort.Reverse(sort.IntSlice(stamps)))
+	for i, stamp := range stamps {
+		filename := fmt.Sprintf(FilenameFormat, stamp)
+		if err = db.readFromFile(filename); err != nil {
+			//todo: log
+			if i < len(stamps)-1 {
+				continue
+			}
+			return err
+		} else {
+			db.filename = filename
+			break
+		}
+	}
+
+	return nil
+}
+
+// Only for test
+func (db *DB) String() string {
+	return db.cleanMap.String()
+}
+
+// ===============================================
+//                   Commands
+// ===============================================
+
+// DbSize cannot get really correct count because of the concurrence.
+func (db *DB) DbSize() int {
+	db.dirtyLock.RLock()
+	defer db.dirtyLock.RUnlock()
+
+	if db.onSave {
+		return db.cleanMap.Count() + db.dirtyMap.Count()
+	}
+	return db.cleanMap.Count()
+}
+
+func (db *DB) Exists(key string) bool {
+	return db.get(key) != nil
+}
+
+// if return true, the db has old value, otherwise, the db do not has the old kv.
+func (db *DB) Del(key string) bool {
+	return db.remove(key) != nil
+}
+
+func (db *DB) Expire(key string) {
+	// todo
+}
+
+func (db *DB) Type(key string) string {
 	obj := db.get(key)
 	if obj == nil {
-		return true
+		return "none"
 	}
-	if obj.Kind() == kind {
-		return true
-	}
-	return false
+	return obj.Kind().String()
 }
-
-// ========
-// Commands
-// ========
-
-//func (db *DB) Set(key string, val interface{}) *Object {
-//	obj := PlainObject(val)
-//	db.set(cli.args[1], obj)
-//
-//	return obj
-//}

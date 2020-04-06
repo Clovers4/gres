@@ -18,14 +18,14 @@ func TestZSet(t *testing.T) {
 
 	assert.Equal(t, true, zs.Length() == 4)
 
-	for n := zs.Rank(1); n != nil; n = n.Next() {
+	for n := zs.GetNodeByRank(1); n != nil; n = n.Next() {
 		fmt.Println(n.Score(), n.Val())
 	}
 	fmt.Println()
 
 	zs.Add(3.0, "A")
 
-	for n := zs.Rank(1); n != nil; n = n.Next() {
+	for n := zs.GetNodeByRank(1); n != nil; n = n.Next() {
 		fmt.Println(n.Score(), n.Val())
 	}
 	fmt.Println()
@@ -36,7 +36,7 @@ func TestZSet(t *testing.T) {
 	_, ok := zs.Get("A")
 	assert.Equal(t, false, ok)
 
-	for n := zs.Rank(1); n != nil; n = n.Next() {
+	for n := zs.GetNodeByRank(1); n != nil; n = n.Next() {
 		fmt.Println(n.Score(), n.Val())
 	}
 }
@@ -62,7 +62,7 @@ func TestZSetMarshal(t *testing.T) {
 
 	assert.Equal(t, 3, newZs.Length())
 	for i := 1; i <= newZs.Length(); i++ {
-		old, new := zs.Rank(i), newZs.Rank(i)
+		old, new := zs.GetNodeByRank(i), newZs.GetNodeByRank(i)
 		assert.Equal(t, old.Val(), new.Val())
 		assert.Equal(t, old.Score(), new.Score())
 	}

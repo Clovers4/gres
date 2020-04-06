@@ -10,9 +10,9 @@ import (
 
 func TestHash_Add(t *testing.T) {
 	h := New()
-	h.Add("A", int64(1))
-	h.Add("B", 2.2)
-	h.Add("C", "C2")
+	h.Set("A", int64(1))
+	h.Set("B", 2.2)
+	h.Set("C", "C2")
 
 	fmt.Println(h)
 	assert.Equal(t, 3, h.Length())
@@ -29,9 +29,9 @@ func TestHash_Add(t *testing.T) {
 
 func TestHash_Marshal(t *testing.T) {
 	h := New()
-	h.Add("A", int64(1))
-	h.Add("B", 2.2)
-	h.Add("C", "C2")
+	h.Set("A", int64(1))
+	h.Set("B", 2.2)
+	h.Set("C", "C2")
 
 	// marshal
 	buf := new(bytes.Buffer)

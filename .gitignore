@@ -18,3 +18,5 @@
 
 my_test.go
 my_bench_test.go
+
+gres_*.db

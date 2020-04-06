@@ -2,7 +2,11 @@ package cmap
 
 import (
 	"fmt"
+	"github.com/clovers4/gres/engine/object"
+	"github.com/clovers4/gres/serialize"
+	"github.com/clovers4/gres/util"
 	fnv2 "hash/fnv"
+	"io"
 	"sort"
 	"sync"
 )
@@ -97,73 +101,86 @@ func hash(key string) uint32 {
 // Only for test
 func (cm *CMap) String() string {
 	var s string
-	s += "{"
+	s += "{\n"
 
 	var keys []string
 	for _, seg := range cm.segments {
 		seg.RLock()
-		defer seg.RUnlock()
 		for k := range seg.items {
 			keys = append(keys, k)
 		}
+		seg.RUnlock()
 	}
 	sort.Strings(keys)
 
 	for _, key := range keys {
 		val, _ := cm.Get(key)
-		s += fmt.Sprintf("%v : %v, ", key, val)
+		s += fmt.Sprintf("  %v : %v\n", key, val)
 	}
 
-	s = s[:len(s)-2]
 	s += "}"
 	return s
 }
 
-//
-//// 实际上整个 Marshal 过程 cmap 都需要被锁定 or 保证只有一个
-//func (cm *CMap) Marshal(w io.Writer) error {
-//	// write total.
-//	total := cm.Count()
-//	if err := util.Write(w, int64(total)); err != nil {
-//		return err
-//	}
-//
-//	// loop write score and val
-//	for _, seg := range cm.segments {
-//		seg.RLock()
-//		defer seg.RUnlock()
-//		for key, obj := range seg.items {
-//			if err := util.Write(w, key); err != nil {
-//				return err
-//			}
-//
-//			v := obj.(serialize.Serializable)
-//			if err := v.Marshal(w); err != nil {
-//				return err
-//			}
-//		}
-//	}
-//	return nil
-//}
-//
-//func (cm *CMap) Unmarshal(r io.Reader) error {
-//	var total int64
-//	if err := util.Read(r, &total); err != nil {
-//		return err
-//	}
-//
-//	for i := 0; i < int(total); i++ {
-//		var val string
-//		if err := util.Read(r, &val); err != nil {
-//			return err
-//		}
-//
-//		obj := object.NilObject()
-//		if err := obj.Unmarshal(r); err != nil {
-//			return err
-//		}
-//
-//		cm.Set(val, obj)
-//	}
-//	return nil
-//}
+// 用于当持久化完成之后, 将 dirtyMap 的数据加入到 cleanMap中
+func (cm *CMap) AddCMap(bm *CMap) {
+	for _, seg := range bm.segments {
+		seg.RLock()
+		for key, obj := range seg.items {
+			if obj == object.Expunged {
+				cm.Remove(key)
+			} else {
+				cm.Set(key, obj)
+			}
+		}
+		seg.RUnlock()
+	}
+}
+
+// 实际上整个 Marshal 过程 cmap 都需要被锁定 or 保证只有一个
+func (cm *CMap) Marshal(w io.Writer) error {
+	// write total.
+	total := cm.Count()
+	if err := util.Write(w, int64(total)); err != nil {
+		return err
+	}
+
+	// loop write score and val
+	for _, seg := range cm.segments {
+		seg.RLock()
+		for key, obj := range seg.items {
+			if err := util.Write(w, key); err != nil {
+				return err
+			}
+
+			v := obj.(serialize.Serializable)
+			if err := v.Marshal(w); err != nil {
+				return err
+			}
+		}
+		seg.RUnlock()
+	}
+	return nil
+}
+
+func (cm *CMap) Unmarshal(r io.Reader) error {
+	var total int64
+	if err := util.Read(r, &total); err != nil {
+		return err
+	}
+
+	for i := 0; i < int(total); i++ {
+		var val string
+		if err := util.Read(r, &val); err != nil {
+			return err
+		}
+
+		obj := new(object.Object)
+		if err := obj.Unmarshal(r); err != nil {
+			return err
+		}
+
+		cm.Set(val, obj)
+	}
+	return nil
+}

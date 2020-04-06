@@ -13,7 +13,13 @@ import (
 	"github.com/clovers4/gres/util"
 )
 
+var Expunged = &Object{}
+
 type ObjKind uint8
+
+func (kind ObjKind) String() string {
+	return ObjKinds[kind]
+}
 
 const (
 	ObjPlain ObjKind = iota
@@ -24,7 +30,7 @@ const (
 )
 
 var ObjKinds = map[ObjKind]string{
-	ObjPlain: "PLAIN", // string, int, float, ...
+	ObjPlain: "PLAIN", // string, int, float, ... todo: 兼容redis协议
 	ObjList:  "LIST",
 	ObjSet:   "SET",
 	ObjZset:  "ZSET",
@@ -41,11 +47,6 @@ func newObject(kind ObjKind, data interface{}) *Object {
 		kind: kind,
 		data: data,
 	}
-}
-
-// for expunged and unmarshal
-func NilObject() *Object {
-	return &Object{}
 }
 
 func PlainObject(val interface{}) *Object {

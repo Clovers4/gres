@@ -92,8 +92,8 @@ func TestObject_Marshal_Hash(t *testing.T) {
 	obj := HashObject()
 	set, ok := obj.Hash()
 	assert.Equal(t, true, ok)
-	set.Add("A", int64(23))
-	set.Add("B", "B23")
+	set.Set("A", int64(23))
+	set.Set("B", "B23")
 	fmt.Println(obj)
 
 	_, ok = obj.List()
