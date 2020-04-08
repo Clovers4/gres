@@ -1,8 +1,9 @@
 package util
 
 import (
-	"errors"
+	"github.com/clovers4/gres/errs"
 	"math"
+	"strconv"
 )
 
 func Add(a, b int) (int, bool) {
@@ -26,7 +27,7 @@ func IntX2Int(num interface{}) (int, error) {
 	case int:
 		return int(v), nil
 	default:
-		return 0, errors.New("the value is not an integer")
+		return 0, errs.ErrIsNotInt
 	}
 }
 
@@ -40,4 +41,24 @@ func ShrinkNum(num int) interface{} {
 	} else {
 		return int64(num)
 	}
+}
+
+func String2Num(s string) (num interface{}, success bool) {
+	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return i, true
+	}
+
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f, true
+	}
+	return nil, false
+}
+
+func String2Int(s string) (num int, err error) {
+	i, err := strconv.ParseInt(s, 10, 64)
+	return int(i), err
+}
+
+func String2Float(s string) (num float64, err error) {
+	return strconv.ParseFloat(s, 64)
 }

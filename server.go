@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -23,22 +24,22 @@ const (
 type Server struct {
 	opts serverOptions
 	// db
-	db []*engine.DB
+	db *engine.DB
 	//	networking
 	clients []*Client
 	log     *zap.Logger
+
+	mu sync.Mutex
 }
 
 type serverOptions struct {
 	configFile        string
 	port              int
-	dbnum             int
 	connectionTimeout time.Duration
 }
 
 var defaultServerOptions = serverOptions{
 	port:              9876,
-	dbnum:             16,
 	connectionTimeout: 120 * time.Second,
 }
 
@@ -70,14 +71,6 @@ func PortOption(p int) ServerOption {
 	}
 }
 
-// DbnumOption set the number of db in server.
-// MAYBE just for test, benchmark, etc.
-func DbnumOption(n int) ServerOption {
-	return func(opts *serverOptions) {
-		opts.dbnum = n
-	}
-}
-
 // ConnectionTimeoutOption set the time duration of connectionTimeout.
 // The connection will be auto closed after the timeout
 // MAYBE just for test, benchmark, etc.
@@ -106,10 +99,7 @@ func NewServer(opt ...ServerOption) *Server {
 		opts: opts,
 		log:  log,
 	}
-	srv.db = make([]*engine.DB, srv.opts.dbnum)
-	for i := 0; i < opts.dbnum; i++ {
-		srv.db[i] = engine.NewDB(true) //todo
-	}
+	srv.db = engine.NewDB(true)
 	return srv
 }
 
@@ -144,14 +134,16 @@ func (srv *Server) ListenAndServe() error {
 func (srv *Server) handleConn(conn net.Conn) {
 	//defer func() {
 	//	if err := recover(); err != nil {
-	//		fmt.Println(err)	// todo: recover
-	//		srv.log.Error("", zap.String("remote addr", conn.RemoteAddr().String()))
+	//		srv.log.Error(fmt.Sprintf("handleConn err: %v", err), zap.String("remote addr", conn.RemoteAddr().String()))
 	//	}
 	//}()
+
 	srv.log.Info("Accept new connection", zap.String("remote addr", conn.RemoteAddr().String()))
 	//conn.SetDeadline(time.Now().Set(srv.opts.connectionTimeout)) // todo: is correct? client side should be closed after deadline
+
 	cli := NewClient(conn, srv)
 	cli.Interact()
+	cli.Close()
 }
 
 func (srv *Server) clientsCron() {

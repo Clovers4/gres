@@ -10,28 +10,32 @@ import (
 
 func TestList(t *testing.T) {
 	ls := New()
+	var s1 string
+	var s2 string
 
 	// 1
 	ls.LPush("A")
 	for n := ls.Front(); n != nil; n = n.Next() {
-		fmt.Print(n.Val(), " ")
+		s1 += fmt.Sprintf("%v ", n.Val())
 	}
-	fmt.Print(": ")
 	for n := ls.End(); n != nil; n = n.Prev() {
-		fmt.Print(n.Val(), " ")
+		s2 += fmt.Sprintf("%v ", n.Val())
 	}
-	fmt.Println()
+	assert.Equal(t, "{A}", ls.String())
+	assert.Equal(t, s1, s2)
 
 	// 2
 	ls.LPop()
+	s1 = ""
 	for n := ls.Front(); n != nil; n = n.Next() {
-		fmt.Print(n.Val(), " ")
+		s1 += fmt.Sprintf("%v ", n.Val())
 	}
-	fmt.Print(": ")
+	s2 = ""
 	for n := ls.End(); n != nil; n = n.Prev() {
-		fmt.Print(n.Val(), " ")
+		s2 = fmt.Sprintf("%v ", n.Val()) + s2
 	}
-	fmt.Println()
+	assert.Equal(t, s1, s2)
+	assert.Equal(t, 0, ls.Length())
 
 	// 3
 	ls.LPop()
@@ -41,26 +45,36 @@ func TestList(t *testing.T) {
 	ls.RPush("B")
 	ls.RPush("C")
 	ls.LPush("A")
+	s1 = ""
 	for n := ls.Front(); n != nil; n = n.Next() {
-		fmt.Print(n.Val(), " ")
+		s1 += fmt.Sprintf("%v ", n.Val())
 	}
-	fmt.Print(": ")
+	s2 = ""
 	for n := ls.End(); n != nil; n = n.Prev() {
-		fmt.Print(n.Val(), " ")
+		s2 = fmt.Sprintf("%v ", n.Val()) + s2
 	}
-	fmt.Println()
+	assert.Equal(t, s1, s2)
+	assert.Equal(t, "{A, B, C}", ls.String())
+	assert.Equal(t, "A", ls.Index(0).Val())
+	assert.Equal(t, "B", ls.Index(1).Val())
+	assert.Equal(t, "C", ls.Index(2).Val())
+	assert.Equal(t, "C", ls.Index(-1).Val())
+	assert.Nil(t, ls.Index(3))
+	assert.Nil(t, ls.Index(-4))
 
 	// 5
 	ls.LPop()
 	ls.RPop()
+	s1 = ""
 	for n := ls.Front(); n != nil; n = n.Next() {
-		fmt.Print(n.Val(), " ")
+		s1 += fmt.Sprintf("%v ", n.Val())
 	}
-	fmt.Print(": ")
+	s2 = ""
 	for n := ls.End(); n != nil; n = n.Prev() {
-		fmt.Print(n.Val(), " ")
+		s2 = fmt.Sprintf("%v ", n.Val()) + s2
 	}
-	fmt.Println()
+	assert.Equal(t, s1, s2)
+	assert.Equal(t, "{B}", ls.String())
 }
 
 func TestList_Marshal(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 // ========
 //   ZSet
 // ========
-func (db *DB) ZAdd(key string, score float64, member string) error {
+func (db *DB) ZAdd(key string, score float64, member string) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.ZSetObject()
@@ -16,10 +16,12 @@ func (db *DB) ZAdd(key string, score float64, member string) error {
 
 	zs, ok := obj.ZSet()
 	if !ok {
-		return ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
-	zs.Add(score, member)
-	return nil
+	if zs.Add(score, member) {
+		return 1, nil
+	}
+	return 0, nil
 }
 
 func (db *DB) ZCard(key string) (int, error) {
@@ -70,30 +72,32 @@ func (db *DB) ZRank(key, member string) (*int, error) {
 	return &rank, nil
 }
 
-func (db *DB) ZRem(key, member string) (bool, error) {
+func (db *DB) ZRem(key string, member ...string) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
-		return false, nil
+		return 0, nil
 	}
 
 	zs, ok := obj.ZSet()
 	if !ok {
-		return false, ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
 
-	_, existed := zs.Delete(member)
-	if !existed {
-		return false, nil
+	count := 0
+	for _, m := range member {
+		if _, existed := zs.Delete(m); existed {
+			count++
+		}
 	}
 
 	if zs.Length() == 0 {
 		db.remove(key)
 	}
-	return true, nil
+	return count, nil
 }
 
 // todo: panic
-func (db *DB) ZIncrBy(key string, member string, increment float64) (float64, error) {
+func (db *DB) ZIncrBy(key string, increment float64, member string) (float64, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.ZSetObject()

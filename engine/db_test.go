@@ -3,13 +3,13 @@ package engine
 import (
 	"bufio"
 	"fmt"
-	"github.com/clovers4/gres/engine/object/plain"
-	"github.com/clovers4/gres/util"
 	"os"
 	"sort"
 	"testing"
 	"time"
 
+	"github.com/clovers4/gres/engine/object/plain"
+	"github.com/clovers4/gres/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -153,7 +153,7 @@ func TestDB_Hash(t *testing.T) {
 
 	val, err = db.HSet("a", "f-1", "v-1")
 	assert.Nil(t, err)
-	assert.Equal(t, nil, val)
+	assert.Equal(t, 1, val)
 
 	val, err = db.HGet("a", "f-1")
 	assert.Nil(t, err)
@@ -169,7 +169,7 @@ func TestDB_Hash(t *testing.T) {
 
 	val, err = db.HDel("a", "f-1")
 	assert.Nil(t, err)
-	assert.Equal(t, true, val)
+	assert.Equal(t, 1, val)
 
 	val, err = db.HLen("a")
 	assert.Nil(t, err)
@@ -181,17 +181,17 @@ func TestDB_Hash(t *testing.T) {
 
 	val, err = db.HDel("a", "f-1")
 	assert.Nil(t, err)
-	assert.Equal(t, false, val)
+	assert.Equal(t, 0, val)
 
 	val, err = db.HSet("a", "f-2", "v-2")
 	assert.Nil(t, err)
-	assert.Equal(t, nil, val)
+	assert.Equal(t, 1, val)
 
 	val, err = db.HSet("a", "f-3", "v-3")
 	assert.Nil(t, err)
-	assert.Equal(t, nil, val)
+	assert.Equal(t, 1, val)
 
-	val, err = db.HIncr("a", "f-4", 34)
+	val, err = db.HIncrBy("a", "f-4", 34)
 	assert.Nil(t, err)
 	assert.Equal(t, int8(34), val)
 
@@ -217,27 +217,27 @@ func TestDB_List(t *testing.T) {
 	var val interface{}
 	var vals []interface{}
 
-	err = db.LPush("ls", "A")
+	val, err = db.LPush("ls", "A")
 	assert.Nil(t, err)
 
-	err = db.RPush("ls", "B")
+	val, err = db.RPush("ls", "B")
 	assert.Nil(t, err)
 
-	err = db.RPush("ls", "C")
+	val, err = db.RPush("ls", "C")
 	assert.Nil(t, err)
 
-	err = db.RPush("ls", 32)
+	val, err = db.RPush("ls", 32)
 	assert.Nil(t, err)
 
 	vals, err = db.LRange("ls", 1, 2)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(vals))
-	assert.Equal(t, "{B, C}", array2String(vals, true))
+	assert.Equal(t, "{B, C}", array2String(vals, false))
 
 	vals, err = db.LRange("ls", 0, -1)
 	assert.Nil(t, err)
 	assert.Equal(t, 4, len(vals))
-	assert.Equal(t, "{A, B, C, 32}", array2String(vals, true))
+	assert.Equal(t, "{A, B, C, 32}", array2String(vals, false))
 
 	val, err = db.LIndex("ls", 1)
 	assert.Nil(t, err)
@@ -258,7 +258,7 @@ func TestDB_List(t *testing.T) {
 	vals, err = db.LRange("ls", 0, -1)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(vals))
-	assert.Equal(t, "{B, C}", array2String(vals, true))
+	assert.Equal(t, "{B, C}", array2String(vals, false))
 }
 
 func TestDB_Set(t *testing.T) {
@@ -268,8 +268,9 @@ func TestDB_Set(t *testing.T) {
 	var ok bool
 	var vals []interface{}
 
-	err = db.SAdd("set-1", "A")
+	num, err = db.SAdd("set-1", "A")
 	assert.Nil(t, err)
+	assert.Equal(t, 1, num)
 
 	db.SAdd("set-1", "B")
 	assert.Nil(t, err)
@@ -291,13 +292,13 @@ func TestDB_Set(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, num)
 
-	ok, err = db.SRem("set-1", 5)
+	num, err = db.SRem("set-1", 5)
 	assert.Nil(t, err)
-	assert.Equal(t, true, ok)
+	assert.Equal(t, 1, num)
 
-	ok, err = db.SRem("set-1", 5)
+	num, err = db.SRem("set-1", 5)
 	assert.Nil(t, err)
-	assert.Equal(t, false, ok)
+	assert.Equal(t, 0, num)
 
 	ok, err = db.SIsMember("set-1", "A")
 	assert.Nil(t, err)
@@ -311,7 +312,7 @@ func TestDB_Set(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "{22, A, B, C}", array2String(vals, true))
 
-	err = db.SAdd("set-2", "A")
+	num, err = db.SAdd("set-2", "A")
 	assert.Nil(t, err)
 
 	db.SAdd("set-2", "B")
@@ -344,17 +345,19 @@ func TestDB_ZSet(t *testing.T) {
 	var rank *int
 	var score *float64
 	var f float64
-	var ok bool
 	var vals []interface{}
 
-	err = db.ZAdd("zs", 1.1, "A")
+	num, err = db.ZAdd("zs", 1.1, "A")
 	assert.Nil(t, err)
+	assert.Equal(t, 1, num)
 
-	err = db.ZAdd("zs", 2.1, "B")
+	num, err = db.ZAdd("zs", 2.1, "B")
 	assert.Nil(t, err)
+	assert.Equal(t, 1, num)
 
-	err = db.ZAdd("zs", 3.1, "C")
+	num, err = db.ZAdd("zs", 3.1, "C")
 	assert.Nil(t, err)
+	assert.Equal(t, 1, num)
 
 	num, err = db.ZCard("zs")
 	assert.Nil(t, err)
@@ -376,19 +379,19 @@ func TestDB_ZSet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, rank)
 
-	ok, err = db.ZRem("zs", "C")
+	num, err = db.ZRem("zs", "C")
 	assert.Nil(t, err)
-	assert.Equal(t, true, ok)
+	assert.Equal(t, 1, num)
 
-	ok, err = db.ZRem("zs", "Unknown")
+	num, err = db.ZRem("zs", "Unknown")
 	assert.Nil(t, err)
-	assert.Equal(t, false, ok)
+	assert.Equal(t, 0, num)
 
-	f, err = db.ZIncrBy("zs", "A-2", 2.5)
+	f, err = db.ZIncrBy("zs", 2.5, "A-2")
 	assert.Nil(t, err)
 	assert.Equal(t, 2.5, f)
 
-	f, err = db.ZIncrBy("zs", "A", 2.5)
+	f, err = db.ZIncrBy("zs", 2.5, "A")
 	assert.Nil(t, err)
 	assert.Equal(t, 3.6, f)
 
@@ -407,4 +410,79 @@ func TestDB_ZSet(t *testing.T) {
 	vals, err = db.ZRange("zs", 1, 1, false)
 	assert.Nil(t, err)
 	assert.Equal(t, "{A-2}", array2String(vals, false))
+}
+
+func TestDB_Expire(t *testing.T) {
+	db := NewDB(true)
+	var v interface{}
+	var err error
+	var ok bool
+
+	err = db.Set("A", "S-1")
+	assert.Nil(t, err)
+
+	v, err = db.Get("A")
+	assert.Nil(t, err)
+	assert.Equal(t, "S-1", v)
+
+	ok = db.Expire("A", 1)
+	assert.Equal(t, true, ok)
+
+	ok = db.Expire("C", 2)
+	assert.Equal(t, false, ok)
+
+	time.Sleep(3 * time.Second)
+
+	v, err = db.Get("A")
+	assert.Nil(t, err)
+	//assert.Equal(t, "S-1", v)
+
+	db.Del("A")
+
+	v, err = db.Get("A")
+	assert.Nil(t, err)
+	assert.Nil(t, v)
+
+	err = db.Set("B", "S-2")
+	assert.Nil(t, err)
+
+	v, err = db.Get("B")
+	assert.Nil(t, err)
+	assert.Equal(t, "S-2", v)
+
+	err = db.Set("C", "S-3")
+	assert.Nil(t, err)
+
+	ok = db.Expire("C", 110)
+	assert.Equal(t, true, ok)
+
+	fmt.Println("db", db.String())
+
+	fmt.Println("ttl:", db.Ttl("A"))
+	fmt.Println("ttl:", db.Ttl("B"))
+	fmt.Println("ttl:", db.Ttl("C"))
+
+	time.Sleep(2 * time.Second)
+}
+
+func TestDB_Expire2(t *testing.T) {
+	db := NewDB(true)
+	var val interface{}
+	var err error
+
+	fmt.Println(db.String())
+
+	val, err = db.Get("A")
+	fmt.Println(val, err)
+	val, err = db.Get("B")
+	fmt.Println(val, err)
+	val, err = db.Get("C")
+	fmt.Println(val, err)
+	fmt.Println()
+
+	fmt.Println("ttl:", db.Ttl("A"))
+	fmt.Println("ttl:", db.Ttl("B"))
+	fmt.Println("ttl:", db.Ttl("C"))
+
+	time.Sleep(2 * time.Second)
 }

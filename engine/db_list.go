@@ -1,13 +1,17 @@
 package engine
 
-import "github.com/clovers4/gres/engine/object"
+import (
+	"fmt"
+	"github.com/clovers4/gres/engine/object"
+	"github.com/clovers4/gres/engine/object/list"
+)
 
 // todo:list hash   num shrink
 
 // ========
 //   List
 // ========
-func (db *DB) LPush(key string, val interface{}) error {
+func (db *DB) LPush(key string, val ...interface{}) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.ListObject()
@@ -16,14 +20,16 @@ func (db *DB) LPush(key string, val interface{}) error {
 
 	ls, ok := obj.List()
 	if !ok {
-		return ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
 
-	ls.LPush(val)
-	return nil
+	for _, v := range val {
+		ls.LPush(v)
+	}
+	return ls.Length(), nil
 }
 
-func (db *DB) RPush(key string, val interface{}) error {
+func (db *DB) RPush(key string, val ...interface{}) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.ListObject()
@@ -32,10 +38,12 @@ func (db *DB) RPush(key string, val interface{}) error {
 
 	ls, ok := obj.List()
 	if !ok {
-		return ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
-	ls.RPush(val)
-	return nil
+	for _, v := range val {
+		ls.RPush(v)
+	}
+	return ls.Length(), nil
 }
 
 func (db *DB) LPop(key string) (interface{}, error) {
@@ -87,8 +95,13 @@ func (db *DB) LRange(key string, start, end int) ([]interface{}, error) {
 
 	startNode := ls.Index(start)
 	endNode := ls.Index(end)
+	var endNext *list.Node
+	if endNode != nil {
+		endNext = endNode.Next()
+	}
 	var vals []interface{}
-	for n := startNode; n != nil && n != endNode.Next(); n = n.Next() {
+	for n := startNode; n != nil && n != endNext; n = n.Next() {
+		fmt.Println(n.Val())
 		vals = append(vals, n.Val())
 	}
 	return vals, nil

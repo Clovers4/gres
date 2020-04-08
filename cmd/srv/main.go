@@ -6,7 +6,7 @@ import (
 
 func main() {
 	// init and start server
-	srv := gres.NewServer(gres.DbnumOption(8))
+	srv := gres.NewServer()
 	srv.ListenAndServe()
 	defer srv.Stop()
 }

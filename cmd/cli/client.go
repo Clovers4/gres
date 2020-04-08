@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
+	"github.com/clovers4/gres/proto"
 	"net"
 	"os"
 	"strings"
@@ -17,18 +19,18 @@ var (
 	host = flag.String("h", "127.0.0.1", "specify host to use.  defaults to 127.0.0.1.")
 )
 
-func init(){
-	flag.Parse()//todo
+func init() {
+	flag.Parse() //todo
 }
 
 // Client represents another side of Server, and is not the same as
 // gres/Client.
 type Client struct {
+	ctx  context.Context
 	opts clientOptions
-	conn net.Conn
+	conn *proto.Conn
 	scan *bufio.Scanner
 	rb   []byte
-	done chan struct{} //todo:
 }
 
 type clientOptions struct {
@@ -52,18 +54,22 @@ func NewClient() *Client {
 	opts := defaultClientOptions
 	initFlag(&opts)
 
-	conn, err := net.DialTimeout("tcp", opts.remoteAddr, opts.connectionTimeout)
+	netConn, err := net.DialTimeout("tcp", opts.remoteAddr, opts.connectionTimeout)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dail err=%v", err)
+		fmt.Fprintf(os.Stderr, "dail err=%v\n", err)
 		os.Exit(0)
 	}
 
+	fmt.Println("cool")
+
+	conn := proto.NewConn(netConn)
+
 	return &Client{
+		ctx:  context.Background(),
 		opts: opts,
 		conn: conn,
 		scan: bufio.NewScanner(os.Stdin),
 		rb:   make([]byte, readSize),
-		done: make(chan struct{}),
 	}
 }
 
@@ -83,10 +89,12 @@ func (cli *Client) Interact() {
 			return
 		}
 		output, err := cli.interact(command) //todo
+		fmt.Printf("%v< ", cli.conn.RemoteAddr())
 		if err != nil {
-			panic(err) //todo:??
+			fmt.Println(err)
+		} else {
+			fmt.Println(output)
 		}
-		fmt.Println(output)
 	}
 	if err := cli.scan.Err(); err != nil {
 		fmt.Printf("reading standard input failed, err=%v", err)
@@ -94,20 +102,34 @@ func (cli *Client) Interact() {
 }
 
 func (cli *Client) interact(input string) (output string, err error) {
-	cli.conn.Write([]byte(input))
-	n, err := cli.conn.Read(cli.rb)
+	input = strings.TrimSpace(input)
+	vals := strings.Split(input, " ")
+	var args []interface{}
+	for _, val := range vals {
+		args = append(args, val)
+	}
+
+	err = cli.conn.WithWriter(cli.ctx, 0, func(wr *proto.Writer) error { // todo:time
+		return wr.ReplyArrays(args)
+	})
+
 	if err != nil {
 		return "", err
 	}
-	if n > 0 {
-		output = string(cli.rb[:n])
-		cli.rb = cli.rb[n:]
-	}
 
-	if len(cli.rb) == 0 {
-		cli.rb = make([]byte, readSize)
-	}
-	return output, nil
+	err = cli.conn.WithReader(cli.ctx, 0, func(rd *proto.Reader) error { // todo:time
+		reply, err := rd.ReadReply()
+		if err != nil {
+			return err
+		}
+		if reply == "" {
+			output = "(nil)"
+		} else {
+			output = fmt.Sprintf("%v", reply)
+		}
+		return nil
+	})
+	return output, err
 }
 
 // GracefulExit does some remaining work and will exit gracefully.

@@ -30,11 +30,11 @@ const (
 )
 
 var ObjKinds = map[ObjKind]string{
-	ObjPlain: "PLAIN", // string, int, float, ... todo: 兼容redis协议
-	ObjList:  "LIST",
-	ObjSet:   "SET",
-	ObjZset:  "ZSET",
-	ObjHash:  "HASH",
+	ObjPlain: "plain", // string, int, float, ... todo: 兼容redis协议
+	ObjList:  "list",
+	ObjSet:   "set",
+	ObjZset:  "zset",
+	ObjHash:  "hash",
 }
 
 type Object struct {

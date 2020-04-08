@@ -1,30 +1,46 @@
 package zset
 
 import (
-	"encoding/binary"
 	"fmt"
-	"github.com/clovers4/gres/engine/object/zset/skiplist"
 	"io"
+	"sync"
 
 	"github.com/clovers4/gres/util"
+	"github.com/clovers4/gres/zset/skiplist"
 )
 
-var DefaultByteOrder = binary.BigEndian
+// this is used for expire
 
 // effective, so dont support concurrent ops.
 type ZSet struct {
-	m        map[string]float64
+	m        map[string]int64
 	skiplist *skiplist.Skiplist
+
+	sync.RWMutex
 }
 
 func New() *ZSet {
 	return &ZSet{
-		m:        make(map[string]float64),
+		m:        make(map[string]int64),
 		skiplist: skiplist.New(),
 	}
 }
 
-func (zs *ZSet) Add(score float64, member string) bool {
+func (zs *ZSet) AddZSet(z2 *ZSet) {
+	for member, score := range z2.m {
+		// ignore -1
+		if score == -1 {
+			zs.Delete(member)
+		} else {
+			zs.Add(score, member)
+		}
+	}
+}
+
+func (zs *ZSet) Add(score int64, member string) bool {
+	zs.Lock()
+	defer zs.Unlock()
+
 	// found
 	if curScore, ok := zs.m[member]; ok {
 		if curScore != score {
@@ -40,6 +56,9 @@ func (zs *ZSet) Add(score float64, member string) bool {
 }
 
 func (zs *ZSet) Incr(member string) {
+	zs.Lock()
+	defer zs.Unlock()
+
 	// found
 	if curScore, ok := zs.m[member]; ok {
 		zs.m[member]++
@@ -50,7 +69,10 @@ func (zs *ZSet) Incr(member string) {
 	zs.skiplist.Insert(1, member)
 }
 
-func (zs *ZSet) Delete(member string) (float64, bool) {
+func (zs *ZSet) Delete(member string) (int64, bool) {
+	zs.Lock()
+	defer zs.Unlock()
+
 	// found
 	if curScore, ok := zs.m[member]; ok {
 		delete(zs.m, member)
@@ -60,12 +82,18 @@ func (zs *ZSet) Delete(member string) (float64, bool) {
 	return 0, false
 }
 
-func (zs *ZSet) Get(member string) (float64, bool) {
+func (zs *ZSet) Get(member string) (int64, bool) {
+	zs.RLock()
+	defer zs.RUnlock()
+
 	score, ok := zs.m[member]
 	return score, ok
 }
 
 func (zs *ZSet) GetRankByMember(member string) (rank int, existed bool) {
+	zs.RLock()
+	defer zs.RUnlock()
+
 	score, existed := zs.m[member]
 	if !existed {
 		return -1, false
@@ -73,16 +101,27 @@ func (zs *ZSet) GetRankByMember(member string) (rank int, existed bool) {
 	return zs.skiplist.GetRankByScore(score)
 }
 
+// need rlock
+func (zs *ZSet) GetNodeLeastScore(score int64) *skiplist.SkiplistNode {
+	return zs.skiplist.GetNodeLeastScore(score)
+}
+
+// need rlock
 func (zs *ZSet) GetNodeByRank(rank int) *skiplist.SkiplistNode {
 	return zs.skiplist.GetNodeByRank(rank)
 }
 
 func (zs *ZSet) Length() int {
+	zs.RLock()
+	defer zs.RUnlock()
 	return zs.skiplist.Length() // can also use len(zs.m), but maybe skiplist.Length() is more fast
 }
 
 // Only for test
 func (zs *ZSet) String() string {
+	zs.RLock()
+	defer zs.RUnlock()
+
 	var s string
 	s += "{"
 	for n := zs.skiplist.Front(); n != nil; n = n.Next() {
@@ -123,7 +162,7 @@ func (zs *ZSet) Unmarshal(r io.Reader) error {
 	}
 
 	for i := 0; i < int(total); i++ {
-		var score float64
+		var score int64
 		if err := util.Read(r, &score); err != nil {
 			return err
 		}

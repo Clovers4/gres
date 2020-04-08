@@ -10,11 +10,11 @@ import (
 
 func TestZSet(t *testing.T) {
 	zs := New()
-	zs.Add(1.0, "A")
-	zs.Add(1.0, "A")
-	zs.Add(2.0, "B")
-	zs.Add(2.0, "B1")
-	zs.Add(3.0, "C")
+	zs.Add(1, "A")
+	zs.Add(1, "A")
+	zs.Add(2, "B")
+	zs.Add(2, "B1")
+	zs.Add(3, "C")
 
 	assert.Equal(t, true, zs.Length() == 4)
 
@@ -23,7 +23,7 @@ func TestZSet(t *testing.T) {
 	}
 	fmt.Println()
 
-	zs.Add(3.0, "A")
+	zs.Add(3, "A")
 
 	for n := zs.GetNodeByRank(1); n != nil; n = n.Next() {
 		fmt.Println(n.Score(), n.Val())
@@ -45,9 +45,9 @@ func TestZSetMarshal(t *testing.T) {
 	var err error
 
 	zs := New()
-	zs.Add(1.32, "A")
-	zs.Add(2.23, "B1")
-	zs.Add(3.44, "C")
+	zs.Add(1, "A")
+	zs.Add(2, "B1")
+	zs.Add(3, "C")
 
 	// marshal
 	buf := new(bytes.Buffer)

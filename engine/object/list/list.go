@@ -7,37 +7,37 @@ import (
 	"io"
 )
 
-type node struct {
-	prev *node
-	next *node
+type Node struct {
+	prev *Node
+	next *Node
 
 	val interface{}
 }
 
-func newNode(val interface{}) *node {
-	return &node{val: val}
+func newNode(val interface{}) *Node {
+	return &Node{val: val}
 }
 
-func (n *node) Next() *node {
+func (n *Node) Next() *Node {
 	return n.next
 }
-func (n *node) Prev() *node {
+func (n *Node) Prev() *Node {
 	return n.prev
 }
 
-func (n *node) SetVal(val interface{}) interface{} {
+func (n *Node) SetVal(val interface{}) interface{} {
 	old := n.val
 	n.val = val
 	return old
 }
 
-func (n *node) Val() interface{} {
+func (n *Node) Val() interface{} {
 	return n.val
 }
 
 type List struct {
-	header *node
-	tail   *node
+	header *Node
+	tail   *Node
 
 	length int
 }
@@ -58,7 +58,7 @@ func (ls *List) LPush(val interface{}) {
 	ls.length++
 }
 
-// NOTICE: LPop assume the length > 0, so cannot distinguish nil or nil node
+// NOTICE: LPop assume the length > 0, so cannot distinguish nil or nil Node
 func (ls *List) LPop() interface{} {
 	if ls.length == 0 {
 		return nil
@@ -87,7 +87,7 @@ func (ls *List) RPush(val interface{}) {
 	ls.length++
 }
 
-// NOTICE: RPop assume the length > 0, so cannot distinguish nil or nil node
+// NOTICE: RPop assume the length > 0, so cannot distinguish nil or nil Node
 func (ls *List) RPop() interface{} {
 	if ls.length == 0 {
 		return nil
@@ -104,16 +104,16 @@ func (ls *List) RPop() interface{} {
 	return n.val
 }
 
-func (ls *List) Front() *node {
+func (ls *List) Front() *Node {
 	return ls.header
 }
 
-func (ls *List) End() *node {
+func (ls *List) End() *Node {
 	return ls.tail
 }
 
 // index start at 0
-func (ls *List) Index(index int) *node {
+func (ls *List) Index(index int) *Node {
 	if index < 0 {
 		index = ls.Length() + index
 	}
@@ -123,7 +123,7 @@ func (ls *List) Index(index int) *node {
 	}
 
 	// 从左向右遍历, 否则从右向左
-	var n *node
+	var n *Node
 	if index <= ls.Length()/2 {
 		n = ls.header
 		for i := 0; i < index; i++ {

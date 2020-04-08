@@ -8,7 +8,7 @@ import (
 // ========
 //   Hash
 // ========
-func (db *DB) HSet(key string, filed string, val interface{}) (interface{}, error) {
+func (db *DB) HSet(key string, filed string, val interface{}) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.HashObject()
@@ -17,10 +17,13 @@ func (db *DB) HSet(key string, filed string, val interface{}) (interface{}, erro
 
 	h, ok := obj.Hash()
 	if !ok {
-		return nil, ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
-	old, _ := h.Set(filed, val)
-	return old, nil
+	_, existed := h.Set(filed, val)
+	if existed {
+		return 0, nil
+	}
+	return 1, nil
 }
 
 func (db *DB) HGet(key string, field string) (interface{}, error) {
@@ -37,22 +40,28 @@ func (db *DB) HGet(key string, field string) (interface{}, error) {
 	return v, nil
 }
 
-func (db *DB) HDel(key string, field string) (bool, error) {
+func (db *DB) HDel(key string, field ...string) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
-		return false, nil
+		return 0, nil
 	}
 
 	h, ok := obj.Hash()
 	if !ok {
-		return false, ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
-	_, existed := h.Delete(field)
+
+	count := 0
+	for _, f := range field {
+		_, existed := h.Delete(f)
+		if existed {
+			count++
+		}
+	}
 	if h.Length() == 0 {
 		db.remove(key)
 	}
-
-	return existed, nil
+	return count, nil
 }
 
 func (db *DB) HLen(key string) (int, error) {
@@ -121,7 +130,7 @@ func (db *DB) HGetAll(key string) ([]interface{}, error) {
 	return h.KeyVals(), nil
 }
 
-func (db *DB) HIncr(key string, field string, increment int) (interface{}, error) {
+func (db *DB) HIncrBy(key string, field string, increment int) (interface{}, error) {
 	obj := db.get(key)
 	if obj == nil {
 		return nil, nil

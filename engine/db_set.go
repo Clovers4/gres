@@ -8,7 +8,7 @@ import (
 // =========
 //    Set
 // =========
-func (db *DB) SAdd(key string, val interface{}) error {
+func (db *DB) SAdd(key string, val ...interface{}) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.SetObject()
@@ -17,27 +17,39 @@ func (db *DB) SAdd(key string, val interface{}) error {
 
 	set, ok := obj.Set()
 	if !ok {
-		return ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
-	set.Add(val)
-	return nil
+	count := 0
+	for _, v := range val {
+		if set.Add(v) {
+			count++
+		}
+	}
+	return count, nil
 }
 
-func (db *DB) SRem(key string, val interface{}) (bool, error) {
+func (db *DB) SRem(key string, val ...interface{}) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
-		return false, nil
+		return 0, nil
 	}
 
 	set, ok := obj.Set()
 	if !ok {
-		return false, ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
-	_, existed := set.Delete(val)
+
+	count := 0
+	for _, v := range val {
+		_, existed := set.Delete(v)
+		if existed {
+			count++
+		}
+	}
 	if set.Length() == 0 {
 		db.remove(key)
 	}
-	return existed, nil
+	return count, nil
 }
 
 func (db *DB) SCard(key string) (int, error) {

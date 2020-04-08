@@ -22,8 +22,11 @@ func New() *Set {
 	}
 }
 
-func (s *Set) Add(val interface{}) {
+// if alrady existed, return false, otherwise return true
+func (s *Set) Add(val interface{}) bool {
+	_, exited := s.m[val]
 	s.m[val] = true
+	return !exited
 }
 
 func (s *Set) Delete(val interface{}) (interface{}, bool) {
