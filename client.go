@@ -92,6 +92,7 @@ func (cli *Client) Interact() {
 
 		if err != nil {
 			cli.log.Warn("[Client Interact] conn.WithWriter()", zap.String("err", err.Error()))
+			break
 		}
 	}
 }

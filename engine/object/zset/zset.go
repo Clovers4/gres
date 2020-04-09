@@ -70,7 +70,7 @@ func (zs *ZSet) GetRankByMember(member string) (rank int, existed bool) {
 	if !existed {
 		return -1, false
 	}
-	return zs.skiplist.GetRankByScore(score)
+	return zs.skiplist.GetRankByScore(score, &member)
 }
 
 func (zs *ZSet) GetNodeByRank(rank int) *skiplist.SkiplistNode {

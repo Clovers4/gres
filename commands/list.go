@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"github.com/clovers4/gres/engine"
 	"github.com/clovers4/gres/errs"
 	"github.com/clovers4/gres/proto"
@@ -84,7 +83,6 @@ func lrangeCmd(db *engine.DB, args []string) *proto.Reply {
 	}
 
 	vals, err := db.LRange(key, start, end)
-	fmt.Println("lrange ", vals)
 	return proto.NewReply(proto.ReplyKindArrays, vals, err)
 }
 

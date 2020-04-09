@@ -44,6 +44,9 @@ func zscoreCmd(db *engine.DB, args []string) *proto.Reply {
 	key := args[1]
 	member := args[2]
 	score, err := db.ZScore(key, member)
+	if score == nil {
+		return proto.NewReply(proto.ReplyKindBlukString, nil, err)
+	}
 	return proto.NewReply(proto.ReplyKindBlukString, score, err)
 }
 

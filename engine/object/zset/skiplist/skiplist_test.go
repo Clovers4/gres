@@ -62,14 +62,14 @@ func TestSkiplist(t *testing.T) {
 
 	var rank int
 	var existed bool
-	rank, existed = sl.GetRankByScore(5.5)
+	rank, existed = sl.GetRankByScore(5.5, nil)
 	assert.Equal(t, false, existed)
 
-	rank, existed = sl.GetRankByScore(5.1)
+	rank, existed = sl.GetRankByScore(5.1, nil)
 	assert.Equal(t, 2, rank)
 	assert.Equal(t, true, existed)
 
-	rank, existed = sl.GetRankByScore(2.1)
+	rank, existed = sl.GetRankByScore(2.1, nil)
 	assert.Equal(t, 0, rank)
 	assert.Equal(t, true, existed)
 }

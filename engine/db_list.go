@@ -101,7 +101,6 @@ func (db *DB) LRange(key string, start, end int) ([]interface{}, error) {
 	}
 	var vals []interface{}
 	for n := startNode; n != nil && n != endNext; n = n.Next() {
-		fmt.Println(n.Val())
 		vals = append(vals, n.Val())
 	}
 	return vals, nil
@@ -128,7 +127,7 @@ func (db *DB) LIndex(key string, index int) (interface{}, error) {
 func (db *DB) LSet(key string, index int, newVal interface{}) (interface{}, error) {
 	obj := db.get(key)
 	if obj == nil {
-		return nil, nil
+		return nil, fmt.Errorf("no such key")
 	}
 
 	ls, ok := obj.List()
@@ -138,7 +137,7 @@ func (db *DB) LSet(key string, index int, newVal interface{}) (interface{}, erro
 
 	n := ls.Index(index)
 	if n == nil {
-		return nil, nil
+		return nil, fmt.Errorf("index out of range")
 	}
 	old := n.SetVal(newVal)
 	return old, nil

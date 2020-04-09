@@ -60,8 +60,6 @@ func NewClient() *Client {
 		os.Exit(0)
 	}
 
-	fmt.Println("cool")
-
 	conn := proto.NewConn(netConn)
 
 	return &Client{
@@ -129,6 +127,20 @@ func (cli *Client) interact(input string) (output string, err error) {
 		}
 		if reply == "" {
 			output = "(nil)"
+		} else if _, ok := reply.(string); ok {
+			output = fmt.Sprintf("\"%v\"", reply)
+		} else if ss, ok := reply.([]string); ok {
+			for i, s := range ss {
+				output += fmt.Sprintf("%v) \"%v\"", i+1, s)
+				if i < len(ss)-1 {
+					output += "\n"
+				}
+			}
+			if len(ss) == 0 {
+				output += "(empty list or set)"
+			}
+		} else if i, ok := reply.(int64); ok {
+			output += fmt.Sprintf("(integer) %v", i)
 		} else {
 			output = fmt.Sprintf("%v", reply)
 		}

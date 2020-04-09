@@ -230,11 +230,12 @@ func (sl *Skiplist) GetNodeByRank(rank int) *SkiplistNode {
 }
 
 // the rank start at 0, end at length-1
-func (sl *Skiplist) GetRankByScore(score float64) (rank int, existed bool) {
+func (sl *Skiplist) GetRankByScore(score float64, member *string) (rank int, existed bool) {
 	traversed := 0
 	n := sl.header
 	for i := sl.level - 1; i >= 0; i-- {
-		for n.levels[i].next != nil && n.levels[i].next.score <= score {
+		for n.levels[i].next != nil && n.levels[i].next.score <= score &&
+			(member == nil || n.levels[i].next.val <= *member) {
 			traversed += n.levels[i].span
 			n = n.levels[i].next
 		}

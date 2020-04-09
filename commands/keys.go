@@ -16,6 +16,7 @@ func init() {
 	registerCmd("exists", 2, existsCmd)
 	registerCmd("del", 2, delCmd)
 	registerCmd("type", 2, typeCmd)
+	registerCmd("keys", 2, keysCmd)
 }
 
 func quitCmd(db *engine.DB, args []string) *proto.Reply {
@@ -69,4 +70,14 @@ func typeCmd(db *engine.DB, args []string) *proto.Reply {
 	key := args[1]
 	t := db.Type(key)
 	return proto.NewReply(proto.ReplyKindBlukString, t, nil)
+}
+
+func keysCmd(db *engine.DB, args []string) *proto.Reply {
+	pattern := args[1]
+	ks, err := db.Keys(pattern)
+	is := make([]interface{}, len(ks))
+	for i := 0; i < len(ks); i++ {
+		is[i] = ks[i]
+	}
+	return proto.NewReply(proto.ReplyKindArrays, is, err)
 }

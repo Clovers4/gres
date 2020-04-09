@@ -11,7 +11,7 @@ import (
 func TestBenchmark(t *testing.T) {
 	go func() {
 		srv := gres.NewServer(gres.DbnumOption(8))
-		srv.ListenAndServe()
+		srv.Start()
 		defer srv.Stop()
 	}()
 	time.Sleep(2 * time.Second)
@@ -42,11 +42,10 @@ func TestBenchmark(t *testing.T) {
 
 }
 
-
 func TestBenchmarkGet(t *testing.T) {
 	go func() {
 		srv := gres.NewServer(gres.DbnumOption(8))
-		srv.ListenAndServe()
+		srv.Start()
 		defer srv.Stop()
 	}()
 	time.Sleep(2 * time.Second)

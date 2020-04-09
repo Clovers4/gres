@@ -13,7 +13,7 @@ func init() {
 	registerCmd("hget", 3, hgetCmd)
 	registerCmd("hdel", -3, hdelCmd)
 	registerCmd("hlen", 2, hlenCmd)
-	registerCmd("hexists", 2, hexistsCmd)
+	registerCmd("hexists", 3, hexistsCmd)
 	registerCmd("hkeys", 2, hkeysCmd)
 	registerCmd("hvals", 2, hvalsCmd)
 	registerCmd("hgetall", 2, hgetallCmd)
@@ -69,7 +69,12 @@ func hexistsCmd(db *engine.DB, args []string) *proto.Reply {
 func hkeysCmd(db *engine.DB, args []string) *proto.Reply {
 	key := args[1]
 	vals, err := db.HKeys(key)
-	return proto.NewReply(proto.ReplyKindArrays, vals, err)
+
+	is := make([]interface{}, len(vals))
+	for i := range vals {
+		is[i] = vals[i]
+	}
+	return proto.NewReply(proto.ReplyKindArrays, is, err)
 }
 
 func hvalsCmd(db *engine.DB, args []string) *proto.Reply {

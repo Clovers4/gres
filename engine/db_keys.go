@@ -1,5 +1,10 @@
 package engine
 
+import (
+	"github.com/clovers4/gres/engine/object"
+	"github.com/clovers4/gres/util"
+)
+
 // DbSize cannot get really correct count because of the concurrence.
 func (db *DB) DbSize() int {
 	db.dirtyLock.RLock()
@@ -40,4 +45,25 @@ func (db *DB) Type(key string) string {
 		return "none"
 	}
 	return obj.Kind().String()
+}
+
+func (db *DB) Keys(pattern string) ([]string, error) {
+	len := db.DbSize()
+	km := make(map[string]bool, len)
+	exp := make(map[string]bool, len)
+	db.forEachRead(func(key string, val interface{}) {
+		if util.Match(pattern, key) {
+			if val == object.Expunged {
+				exp[key] = true
+			} else if !exp[key] {
+				km[key] = true
+			}
+		}
+	})
+
+	ks := make([]string, 0, len)
+	for k := range km {
+		ks = append(ks, k)
+	}
+	return ks, nil
 }

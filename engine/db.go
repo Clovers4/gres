@@ -102,6 +102,9 @@ func NewDB(ops ...dbOption) *DB {
 	}
 
 	if db.persist {
+		if err := db.keepOneProcess(); err != nil {
+			panic(err)
+		}
 		if err := db.ReadFromFile(); err != nil {
 			panic(err)
 		}
@@ -188,6 +191,23 @@ func (db *DB) getLocked(key string) *object.Object {
 		return nil
 	}
 	return v.(*object.Object)
+}
+
+// heavy ops, only for test, keys command....
+func (db *DB) forEachRead(fn func(key string, val interface{})) {
+	db.dirtyLock.RLock()
+	defer db.dirtyLock.RUnlock()
+	db.forEachReadLocked(fn)
+}
+
+func (db *DB) forEachReadLocked(fn func(key string, val interface{})) {
+	// 持久化中
+	if db.onSave {
+		db.dirtyDataMap.ForEachRead(fn)
+	}
+
+	// 非持久化中默认读 dataMap; 持久化中, 若 dirtyDataMap 无数据, 则从 dataMap 读取
+	db.dataMap.ForEachRead(fn)
 }
 
 func (db *DB) setExpire(key string, seconds int) bool {

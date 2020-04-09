@@ -130,15 +130,16 @@ func (db *DB) HGetAll(key string) ([]interface{}, error) {
 	return h.KeyVals(), nil
 }
 
-func (db *DB) HIncrBy(key string, field string, increment int) (interface{}, error) {
+func (db *DB) HIncrBy(key string, field string, increment int) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
-		return nil, nil
+		obj = object.HashObject()
+		db.set(key, obj)
 	}
 
 	h, ok := obj.Hash()
 	if !ok {
-		return nil, ErrWrongTypeOps
+		return 0, ErrWrongTypeOps
 	}
 
 	val, ok := h.Get(field)
@@ -148,7 +149,7 @@ func (db *DB) HIncrBy(key string, field string, increment int) (interface{}, err
 
 	valInt, err := util.IntX2Int(val)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	afterInt, ok := util.Add(valInt, increment)
@@ -157,7 +158,7 @@ func (db *DB) HIncrBy(key string, field string, increment int) (interface{}, err
 	}
 	afterVal := util.ShrinkNum(afterInt)
 	h.Set(field, afterVal)
-	return afterVal, nil
+	return afterInt, nil
 }
 
 // todo:hincrbyfloat

@@ -22,6 +22,7 @@ func (db *DB) Set(key string, val interface{}) error {
 
 	obj := object.PlainObject(val)
 	db.set(key, obj)
+	db.removeExpireLocked(key)
 	return nil
 }
 
@@ -46,13 +47,13 @@ func (db *DB) GetSet(key string, val interface{}) (oldVal interface{}, err error
 	return oldVal, err
 }
 
-func (db *DB) Incr(key string) (interface{}, error) {
+func (db *DB) Incr(key string) (int, error) {
 	return db.IncrBy(key, 1)
 }
 
 // we think num is always int, and do not use uint.
 // 返回结果为计算后的值
-func (db *DB) IncrBy(key string, num int) (interface{}, error) {
+func (db *DB) IncrBy(key string, num int) (int, error) {
 	obj := db.get(key)
 	if obj == nil {
 		obj = object.PlainObject(int8(0))
@@ -77,13 +78,13 @@ func (db *DB) IncrBy(key string, num int) (interface{}, error) {
 
 	afterVal := util.ShrinkNum(afterInt)
 	p.SetVal(afterVal)
-	return afterVal, nil
+	return afterInt, nil
 }
 
-func (db *DB) DecrBy(key string, num int) (interface{}, error) {
+func (db *DB) DecrBy(key string, num int) (int, error) {
 	return db.IncrBy(key, -num)
 }
 
-func (db *DB) Decr(key string) (interface{}, error) {
+func (db *DB) Decr(key string) (int, error) {
 	return db.IncrBy(key, -1)
 }

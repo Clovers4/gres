@@ -75,6 +75,16 @@ func (cm *CMap) Remove(key string) (v interface{}, ok bool) {
 	return v, ok
 }
 
+func (cm *CMap) ForEachRead(fn func(key string, val interface{})) {
+	for _, seg := range cm.segments {
+		seg.RLock()
+		for k, v := range seg.items {
+			fn(k, v)
+		}
+		seg.RUnlock()
+	}
+}
+
 // Count returns amount of elements in CMap.
 // But the count is not very accurate.
 func (cm *CMap) Count() int {

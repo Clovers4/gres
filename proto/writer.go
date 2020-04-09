@@ -74,7 +74,7 @@ func (w *Writer) ReplyErr(reply error) error {
 		return err
 	}
 
-	_, err = w.wr.Write(util.StringToBytes(reply.Error()))
+	_, err = w.wr.Write(util.StringToBytes("ERR " + reply.Error()))
 	if err != nil {
 		return err
 	}

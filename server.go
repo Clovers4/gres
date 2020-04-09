@@ -3,8 +3,11 @@ package gres
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/clovers4/gres/engine"
@@ -29,6 +32,8 @@ type Server struct {
 	log     *zap.Logger
 
 	mu sync.Mutex
+
+	close bool
 }
 
 type serverOptions struct {
@@ -104,6 +109,11 @@ func NewServer(opt ...ServerOption) *Server {
 	return srv
 }
 
+func (srv *Server) Start() {
+	srv.listenExist()
+	srv.listenAndServe()
+}
+
 // Serve creates a listener, accepts incoming connections and creates
 // a service goroutine for each. The service goroutines read gres requests
 // and then call the registered handlers(commands) to reply to them.
@@ -112,7 +122,7 @@ func NewServer(opt ...ServerOption) *Server {
 // will be closed when this method returns.
 //
 // Serve will return a non-nil error unless Stop or GracefulStop is called.
-func (srv *Server) ListenAndServe() error {
+func (srv *Server) listenAndServe() {
 	// todo:	signal.Notify(quitCh, os.Kill, os.Interrupt, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	addr := fmt.Sprintf("%s:%d", "127.0.0.1", srv.opts.port) // net.ResolveTCPAddr(
 	lis, err := net.Listen("tcp", addr)
@@ -129,15 +139,34 @@ func (srv *Server) ListenAndServe() error {
 		}
 		go srv.handleConn(conn)
 	}
-	return nil
+}
+
+func (srv *Server) listenExist() {
+	//创建监听退出chan
+	c := make(chan os.Signal)
+	//监听指定信号 ctrl+c kill
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		for s := range c {
+			switch s {
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				srv.log.Warn("[Server Stop] get exit signal, start exit", zap.String("signal", fmt.Sprintf("%v", s)))
+				srv.Stop()
+				close(c)
+				os.Exit(1)
+			default:
+				srv.log.Warn("[Server Stop] get other signal", zap.String("signal", fmt.Sprintf("%v", s)))
+			}
+		}
+	}()
 }
 
 func (srv *Server) handleConn(conn net.Conn) {
-	//defer func() {
-	//	if err := recover(); err != nil {
-	//		srv.log.Error(fmt.Sprintf("handleConn err: %v", err), zap.String("remote addr", conn.RemoteAddr().String()))
-	//	}
-	//}()
+	defer func() {
+		if err := recover(); err != nil {
+			srv.log.Error("[Server] handleConn", zap.String("remote addr", conn.RemoteAddr().String()), zap.String("err", fmt.Sprintf("%v", err)))
+		}
+	}()
 
 	srv.log.Info("[Server handleConn] Accept new connection", zap.String("remote addr", conn.RemoteAddr().String()))
 	//conn.SetDeadline(time.Now().Set(srv.opts.connectionTimeout)) // todo: is correct? client side should be closed after deadline
@@ -159,6 +188,11 @@ func (srv *Server) freeMemoryIfNeed() {
 }
 
 func (srv *Server) Stop() {
+	if srv.close {
+		return
+	}
+
+	srv.close = true
 	var err error
 	for _, cli := range srv.clients {
 		if err = cli.Close(); err != nil {
@@ -171,4 +205,5 @@ func (srv *Server) Stop() {
 	if err = srv.db.Close(); err != nil {
 		srv.log.Warn("[Server Stop] db.Close()", zap.String("err", err.Error()))
 	}
+	srv.log.Info("[Server Stop] finished")
 }
