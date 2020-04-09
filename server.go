@@ -2,12 +2,13 @@ package gres
 
 import (
 	"fmt"
-	"github.com/clovers4/gres/engine"
-	"go.uber.org/zap"
 	"net"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/clovers4/gres/engine"
+	"go.uber.org/zap"
 )
 
 const (
@@ -18,8 +19,6 @@ const (
 const (
 	readSize = 4096
 )
-
-// todo: default global server
 
 type Server struct {
 	opts serverOptions
@@ -99,7 +98,9 @@ func NewServer(opt ...ServerOption) *Server {
 		opts: opts,
 		log:  log,
 	}
-	srv.db = engine.NewDB(true)
+	srv.db = engine.NewDB(
+		engine.PersistOption(true),
+		engine.LogOption(log))
 	return srv
 }
 
@@ -138,20 +139,16 @@ func (srv *Server) handleConn(conn net.Conn) {
 	//	}
 	//}()
 
-	srv.log.Info("Accept new connection", zap.String("remote addr", conn.RemoteAddr().String()))
+	srv.log.Info("[Server handleConn] Accept new connection", zap.String("remote addr", conn.RemoteAddr().String()))
 	//conn.SetDeadline(time.Now().Set(srv.opts.connectionTimeout)) // todo: is correct? client side should be closed after deadline
 
 	cli := NewClient(conn, srv)
+	defer func() {
+		if err := cli.Close(); err != nil {
+			srv.log.Info("[Server handleConn] cli.Close()", zap.String("err", err.Error()))
+		}
+	}()
 	cli.Interact()
-	cli.Close()
-}
-
-func (srv *Server) clientsCron() {
-	// todo
-}
-
-func (srv *Server) serverCron() {
-
 }
 
 func (srv *Server) freeMemoryIfNeed() {
@@ -162,8 +159,16 @@ func (srv *Server) freeMemoryIfNeed() {
 }
 
 func (srv *Server) Stop() {
+	var err error
 	for _, cli := range srv.clients {
-		cli.Close()
+		if err = cli.Close(); err != nil {
+			srv.log.Warn("[Server Stop] cli.Close()", zap.String("err", err.Error()))
+		}
 	}
-	srv.log.Sync()
+	if err = srv.log.Sync(); err != nil {
+		srv.log.Warn("[Server Stop] log.Sync()", zap.String("err", err.Error()))
+	}
+	if err = srv.db.Close(); err != nil {
+		srv.log.Warn("[Server Stop] db.Close()", zap.String("err", err.Error()))
+	}
 }

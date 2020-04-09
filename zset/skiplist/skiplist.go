@@ -111,7 +111,7 @@ func (sl *Skiplist) Insert(score int64, val string) *SkiplistNode {
 
 	// increment span for untouched levels
 	for i := level; i < sl.level; i++ {
-		update[i].levels[i].span++ // todo
+		update[i].levels[i].span++
 	}
 
 	if update[0] != sl.header {
@@ -170,7 +170,7 @@ func (sl *Skiplist) deleteNode(n *SkiplistNode, update []*SkiplistNode) {
 	sl.length--
 }
 
-// todo:注意事项 val==n.val
+// 注意 val==n.val
 func (sl *Skiplist) UpdateScore(curScore, newScore int64, val string) *SkiplistNode {
 	update := make([]*SkiplistNode, MaxLevel, MaxLevel)
 

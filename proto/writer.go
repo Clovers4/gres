@@ -127,7 +127,6 @@ func (w *Writer) ReplyArrays(args []interface{}) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("arrars:%v ", string(w.lenBuf))
 
 	for _, arg := range args {
 		err := w.ReplyBulkStringV(arg)

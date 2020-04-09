@@ -49,7 +49,7 @@ func TestFile(t *testing.T) {
 }
 
 func TestDB_Save(t *testing.T) {
-	db := NewDB(true)
+	db := NewDB(PersistOption(true))
 
 	db.Set("string-A", "A1")
 	db.Set("string-A", "A1-0")
@@ -76,7 +76,7 @@ func TestDB_Save(t *testing.T) {
 	fmt.Println(db)
 	db.Save()
 
-	newDB := NewDB(true)
+	newDB := NewDB(PersistOption(true))
 	err := newDB.ReadFromFile()
 	assert.Nil(t, err)
 	fmt.Println(newDB)
@@ -85,14 +85,14 @@ func TestDB_Save(t *testing.T) {
 }
 
 func TestDB_ReadFromFile(t *testing.T) {
-	newDB := NewDB(true)
+	newDB := NewDB(PersistOption(true))
 	err := newDB.ReadFromFile()
 	assert.Nil(t, err)
 	fmt.Println(newDB)
 }
 
 func TestDB_Plain(t *testing.T) {
-	db := NewDB(false)
+	db := NewDB()
 	var val interface{}
 	var err error
 
@@ -143,7 +143,7 @@ func TestDB_Plain(t *testing.T) {
 }
 
 func TestDB_Hash(t *testing.T) {
-	db := NewDB(false)
+	db := NewDB()
 	var val interface{}
 	var err error
 
@@ -212,7 +212,7 @@ func TestDB_Hash(t *testing.T) {
 }
 
 func TestDB_List(t *testing.T) {
-	db := NewDB(false)
+	db := NewDB()
 	var err error
 	var val interface{}
 	var vals []interface{}
@@ -262,7 +262,7 @@ func TestDB_List(t *testing.T) {
 }
 
 func TestDB_Set(t *testing.T) {
-	db := NewDB(false)
+	db := NewDB()
 	var err error
 	var num int
 	var ok bool
@@ -339,7 +339,7 @@ func TestDB_Set(t *testing.T) {
 }
 
 func TestDB_ZSet(t *testing.T) {
-	db := NewDB(false)
+	db := NewDB()
 	var err error
 	var num int
 	var rank *int
@@ -413,7 +413,7 @@ func TestDB_ZSet(t *testing.T) {
 }
 
 func TestDB_Expire(t *testing.T) {
-	db := NewDB(true)
+	db := NewDB(PersistOption(true))
 	var v interface{}
 	var err error
 	var ok bool
@@ -466,7 +466,7 @@ func TestDB_Expire(t *testing.T) {
 }
 
 func TestDB_Expire2(t *testing.T) {
-	db := NewDB(true)
+	db := NewDB(PersistOption(true))
 	var val interface{}
 	var err error
 

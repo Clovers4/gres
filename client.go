@@ -3,11 +3,13 @@ package gres
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
+
 	"github.com/clovers4/gres/commands"
 	"github.com/clovers4/gres/engine"
 	"github.com/clovers4/gres/proto"
-	"net"
-	"strings"
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,6 +22,8 @@ type Client struct {
 	conn *proto.Conn
 	db   *engine.DB // Pointer to currently selected DB
 	srv  *Server
+
+	log *zap.Logger
 }
 
 func NewClient(netConn net.Conn, srv *Server) *Client {
@@ -32,6 +36,7 @@ func NewClient(netConn net.Conn, srv *Server) *Client {
 		conn: conn,
 		db:   srv.db,
 		srv:  srv,
+		log:  srv.log,
 	}
 
 	srv.mu.Lock()
@@ -53,10 +58,6 @@ func (cli *Client) Interact() {
 				return err
 			}
 
-			// todo
-			fmt.Printf("read %v args: %v\n", conn.RemoteAddr(), input)
-
-			// todo: cmd like "quit"
 			var args []string
 			args, ok := input.([]string)
 			if !ok || len(args) == 0 {
@@ -64,7 +65,7 @@ func (cli *Client) Interact() {
 			}
 
 			args[0] = strings.ToLower(args[0])
-			if args[0] == "quit" {
+			if args[0] == "quit" || args[0] == "exit" {
 				quit = true
 				return nil
 			}
@@ -78,7 +79,6 @@ func (cli *Client) Interact() {
 			return nil
 		})
 
-		fmt.Println("read finish") // todo
 		if quit == true {
 			break
 		}
@@ -89,14 +89,15 @@ func (cli *Client) Interact() {
 			}
 			return wr.Reply(reply)
 		})
-		fmt.Printf("write %v reply: %v\n", conn.RemoteAddr(), reply) // todo
 
-		// todo: log err
+		if err != nil {
+			cli.log.Warn("[Client Interact] conn.WithWriter()", zap.String("err", err.Error()))
+		}
 	}
 }
 
-func (cli *Client) Close() {
-	cli.conn.Close()
+func (cli *Client) Close() error {
+	err := cli.conn.Close()
 
 	srv := cli.srv
 	srv.mu.Lock()
@@ -110,4 +111,6 @@ func (cli *Client) Close() {
 		}
 	}
 	srv.mu.Unlock()
+	cli.log.Info("End connection", zap.String("remote addr", cli.conn.RemoteAddr().String()))
+	return err
 }

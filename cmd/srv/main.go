@@ -7,6 +7,6 @@ import (
 func main() {
 	// init and start server
 	srv := gres.NewServer()
-	srv.ListenAndServe()
 	defer srv.Stop()
+	srv.ListenAndServe()
 }

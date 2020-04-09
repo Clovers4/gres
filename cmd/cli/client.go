@@ -85,17 +85,22 @@ func (cli *Client) Interact() {
 			break
 		}
 		command := cli.scan.Text()
-		if strings.ToLower(command) == "exit" { //todo
-			return
-		}
-		output, err := cli.interact(command) //todo
-		fmt.Printf("%v< ", cli.conn.RemoteAddr())
+
+		output, err := cli.interact(command)
+
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("client has errors:", err)
+			break
 		} else {
 			fmt.Println(output)
 		}
+
+		name := strings.ToLower(command)
+		if name == "exit" || name == "quit" {
+			break
+		}
 	}
+
 	if err := cli.scan.Err(); err != nil {
 		fmt.Printf("reading standard input failed, err=%v", err)
 	}
@@ -135,6 +140,7 @@ func (cli *Client) interact(input string) (output string, err error) {
 // GracefulExit does some remaining work and will exit gracefully.
 // It will close the connection, ... , etc.
 func (cli *Client) GracefulExit() {
-	// todo: modify graceful stop
+	cli.conn.Close()
+	fmt.Println("CLOSE connection done...")
 	os.Exit(0)
 }

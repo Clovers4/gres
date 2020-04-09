@@ -31,7 +31,7 @@ func (r *Reader) ReadReply() (interface{}, error) {
 
 	switch line[0] {
 	case ErrReply:
-		return nil, parseErrorReply(line)
+		return parseErrorReply(line), nil
 	case StatusReply:
 		return string(line[1:]), nil
 	case IntReply:
@@ -49,7 +49,7 @@ func (r *Reader) ReadReply() (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			vals[i] = v.(string) // todo:
+			vals[i] = v.(string)
 		}
 		return vals, nil
 	}
@@ -84,7 +84,7 @@ func (r *Reader) readLine() ([]byte, error) {
 
 func (r *Reader) readBulkStringReply(line []byte) (string, error) {
 	if isNilReply(line) {
-		return "", Nil
+		return Nil.Error(), nil
 	}
 
 	replyLen, err := util.Atoi(line[1:])

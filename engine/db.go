@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/clovers4/gres/zset"
 	"os"
 	"path/filepath"
 	"sort"
@@ -15,6 +14,9 @@ import (
 	"github.com/clovers4/gres/engine/cmap"
 	"github.com/clovers4/gres/engine/object"
 	"github.com/clovers4/gres/util"
+	"github.com/clovers4/gres/zset"
+	"github.com/gofrs/flock"
+	"go.uber.org/zap"
 )
 
 const (
@@ -50,6 +52,7 @@ type DB struct {
 	doExpireMinPercent float64       // [expire策略] 执行 expire 最小百分比
 
 	filename string
+	fileLock *flock.Flock
 
 	dataMap    *cmap.CMap // 正常情况下, 往该 map 中进行存取
 	expireList *zset.ZSet // 实现过期功能. k=key(string),v=time(unixtime-int64)
@@ -58,11 +61,32 @@ type DB struct {
 	dirtyLock       sync.RWMutex
 	dirtyDataMap    *cmap.CMap // 持久化中, 新数据存入该 map
 	dirtyExpireList *zset.ZSet // 持久化中, 新数据存入该 map
+
+	log *zap.Logger
 }
 
-func NewDB(persist bool) *DB {
+type dbOption func(*DB)
+
+func PersistOption(persist bool) dbOption {
+	return func(db *DB) {
+		db.persist = persist
+	}
+}
+
+func LogOption(log *zap.Logger) dbOption {
+	return func(db *DB) {
+		db.log = log
+	}
+}
+
+func NewDB(ops ...dbOption) *DB {
+	log, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
 	db := &DB{
-		persist:     persist,
+		persist:     false,
 		persistTime: 1 * time.Second, // default
 
 		doExpireTime:       1 * time.Second, // default
@@ -71,8 +95,13 @@ func NewDB(persist bool) *DB {
 
 		dataMap:    cmap.New(),
 		expireList: zset.New(),
+		log:        log,
 	}
-	if persist {
+	for _, op := range ops {
+		op(db)
+	}
+
+	if db.persist {
 		if err := db.ReadFromFile(); err != nil {
 			panic(err)
 		}
@@ -139,13 +168,10 @@ func (db *DB) get(key string) *object.Object {
 }
 
 func (db *DB) getLocked(key string) *object.Object {
-	db.dirtyLock.RLock()
-	defer db.dirtyLock.RUnlock()
-
 	// 持久化中
 	if db.onSave {
-
-		//todo
+		// use the side effect, if key is expired, then kv will be nil
+		db.ttlLocked(key)
 
 		// 先从 dirtyDataMap 读, 若为 Expunged, 则认为已删除
 		if oldValue, existed := db.dirtyDataMap.Get(key); existed {
@@ -269,11 +295,11 @@ func (db *DB) DoExpireBackground() {
 	t := time.NewTicker(db.doExpireTime)
 	for {
 		<-t.C
-		db.DoExpire()
+		db.doExpire()
 	}
 }
 
-func (db *DB) DoExpire() {
+func (db *DB) doExpire() {
 	db.dirtyLock.RLock()
 
 	now := time.Now().Unix()
@@ -313,7 +339,6 @@ func (db *DB) DoExpire() {
 	target.RUnlock()
 	db.dirtyLock.RUnlock()
 
-	fmt.Println("needDel:", needDels)
 	for _, key := range needDels {
 		db.dirtyLock.RLock()
 		db.removeExpire(key)
@@ -321,8 +346,7 @@ func (db *DB) DoExpire() {
 		db.dirtyLock.RUnlock()
 	}
 
-	// todo: log
-	fmt.Println("db doExpire finished")
+	db.log.Debug("[DB doExpire] finished", zap.String("now", time.Now().String()))
 }
 
 func (db *DB) SaveBackground() {
@@ -330,10 +354,9 @@ func (db *DB) SaveBackground() {
 	for {
 		<-t.C
 		if err := db.Save(); err != nil {
-			// todo:log
-			fmt.Printf("db save err=%v\n", err)
+			db.log.Error("[DB SaveBackground] Save", zap.String("err", err.Error()))
 		} else {
-			fmt.Printf("save success: %v\n", time.Now())
+			db.log.Debug("[DB SaveBackground] Save success")
 		}
 	}
 }
@@ -371,7 +394,7 @@ func (db *DB) Save() error {
 	// 删除老文件
 	if db.filename != "" {
 		if err := os.Remove(db.filename); err != nil {
-			// todo:log
+			db.log.Error("[DB Save] Remove", zap.String("err", err.Error()))
 		}
 	}
 
@@ -472,15 +495,17 @@ func (db *DB) ReadFromFile() error {
 
 	// 如果持久化过程中断电 or 其他极端情况, 可能出现多个 .db 文件
 	var stamps []int
-	for _, filename := range filenames {
+	for i, filename := range filenames {
 		if len(filename) < len(FilenamePrefix) {
 			continue
 		}
 
 		num, err := strconv.Atoi(filename[len(FilenamePrefix) : len(filename)-3])
 		if err != nil {
-			//todo:
-			return err
+			db.log.Error("[DB ReadFromFile] read stamp", zap.String("err", err.Error()))
+			if i == len(filenames)-1 && len(stamps) == 0 {
+				return err
+			}
 		}
 		stamps = append(stamps, num)
 	}
@@ -490,7 +515,7 @@ func (db *DB) ReadFromFile() error {
 	for i, stamp := range stamps {
 		filename := fmt.Sprintf(FilenameFormat, stamp)
 		if err = db.readFromFile(filename); err != nil {
-			//todo: log
+			db.log.Error("[DB ReadFromFile] readFromFile", zap.String("err", err.Error()))
 			if i < len(stamps)-1 {
 				continue
 			}
@@ -500,8 +525,27 @@ func (db *DB) ReadFromFile() error {
 			break
 		}
 	}
-
 	return nil
+}
+
+func (db *DB) Close() error {
+	if db.persist {
+		return db.endKeepOneProcess()
+	}
+	return nil
+}
+
+func (db *DB) keepOneProcess() error {
+	db.fileLock = flock.New("GRES_LOCK")
+	ok, err := db.fileLock.TryLock()
+	if !ok {
+		return fmt.Errorf("GRES is already boost")
+	}
+	return err
+}
+
+func (db *DB) endKeepOneProcess() error {
+	return db.fileLock.Unlock()
 }
 
 // Only for test

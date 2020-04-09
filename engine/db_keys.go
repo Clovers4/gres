@@ -15,8 +15,8 @@ func (db *DB) Exists(key string) bool {
 	return db.get(key) != nil
 }
 
-func (db *DB) Ttl(key string) int64 {
-	return db.ttl(key)
+func (db *DB) Ttl(key string) int {
+	return int(db.ttl(key))
 }
 
 // if return true, the db has old value, otherwise, the db do not has the old kv.
