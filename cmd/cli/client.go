@@ -5,11 +5,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/clovers4/gres/proto"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/clovers4/gres/proto"
+	"go.uber.org/zap"
 )
 
 const readSize = 4096
@@ -31,6 +35,8 @@ type Client struct {
 	conn *proto.Conn
 	scan *bufio.Scanner
 	rb   []byte
+
+	log *zap.Logger
 }
 
 type clientOptions struct {
@@ -73,6 +79,31 @@ func NewClient() *Client {
 
 func initFlag(opts *clientOptions) {
 	opts.remoteAddr = fmt.Sprintf("%s:%d", *host, *port)
+}
+
+func (cli *Client) Start() {
+	cli.listenExist()
+	cli.Interact()
+}
+
+func (cli *Client) listenExist() {
+	//创建监听退出chan
+	c := make(chan os.Signal)
+	//监听指定信号 ctrl+c kill
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		for s := range c {
+			switch s {
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				fmt.Printf("\n[Client listenExist] get exit signal=%v, start exit\n", fmt.Sprintf("%v", s))
+				cli.GracefulExit()
+				close(c)
+				os.Exit(1)
+			default:
+				fmt.Printf("[Client listenExist] get other signal=%v, start exit\n", fmt.Sprintf("%v", s))
+			}
+		}
+	}()
 }
 
 func (cli *Client) Interact() {

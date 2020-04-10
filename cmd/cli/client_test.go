@@ -10,7 +10,7 @@ import (
 
 func TestBenchmark(t *testing.T) {
 	go func() {
-		srv := gres.NewServer(gres.DbnumOption(8))
+		srv := gres.NewServer()
 		srv.Start()
 		defer srv.Stop()
 	}()

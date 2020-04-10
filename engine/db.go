@@ -550,8 +550,14 @@ func (db *DB) ReadFromFile() error {
 
 func (db *DB) Close() error {
 	if db.persist {
-		return db.endKeepOneProcess()
+		defer db.endKeepOneProcess()
 	}
+	db.doExpire()
+
+	if err := db.Save(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
