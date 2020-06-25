@@ -12,10 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	crlf = "\r\n"
-)
-
 type Client struct {
 	ctx context.Context
 
