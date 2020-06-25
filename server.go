@@ -1,7 +1,9 @@
 package gres
 
 import (
+	"flag"
 	"fmt"
+	"github.com/clovers4/gres/util"
 	"net"
 	"os"
 	"os/signal"
@@ -22,6 +24,14 @@ const (
 const (
 	readSize = 4096
 )
+
+var (
+	port = flag.Int("p", 9876, "specify port to use.  defaults to 9876.")
+)
+
+func init() {
+	flag.Parse() //todo
+}
 
 type Server struct {
 	opts serverOptions
@@ -51,7 +61,7 @@ var defaultServerOptions = serverOptions{
 type ServerOption func(opts *serverOptions)
 
 func (opt *serverOptions) readFlag() {
-	// todo:
+	opt.port = *port
 }
 
 func (opt *serverOptions) readConfigFile() {
@@ -93,7 +103,12 @@ func NewServer(opt ...ServerOption) *Server {
 	opts.readFlag()
 	opts.readConfigFile()
 
-	log, err := zap.NewProduction()
+	logFilename := fmt.Sprintf("db_%v.log", time.Now().Unix())
+	logHook, err := util.FileLogHook(logFilename)
+	if err != nil {
+		panic(err)
+	}
+	log, err := zap.NewProduction(zap.Hooks(logHook))
 	if err != nil {
 		panic(err)
 	}

@@ -549,16 +549,15 @@ func (db *DB) ReadFromFile() error {
 }
 
 func (db *DB) Close() error {
-	if db.persist {
-		defer db.endKeepOneProcess()
-	}
+	var err error
 	db.doExpire()
+	err = db.Save()
 
-	if err := db.Save(); err != nil {
-		return err
+	if db.persist {
+		db.endKeepOneProcess()
 	}
 
-	return nil
+	return err
 }
 
 func (db *DB) keepOneProcess() error {

@@ -142,6 +142,41 @@ func TestDB_Plain(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestDB_Plain2(t *testing.T) {
+	db := NewDB()
+	var val interface{}
+	var err error
+
+	val, err = db.Get("b")
+	assert.Nil(t, err)
+	assert.Equal(t, nil, val)
+
+	db.Set("b", int64(32))
+	val, err = db.Get("b")
+	assert.Equal(t, int8(32), val)
+	assert.Nil(t, err)
+
+	val, err = db.IncrBy("b", 5)
+	assert.Equal(t, 37, val)
+	assert.Nil(t, err)
+
+	val, err = db.Incr("b")
+	assert.Equal(t, 38, val)
+	assert.Nil(t, err)
+
+	val, err = db.DecrBy("b", 4)
+	assert.Equal(t, 34, val)
+	assert.Nil(t, err)
+
+	val, err = db.Decr("b")
+	assert.Equal(t, 33, val)
+	assert.Nil(t, err)
+
+	val, err = db.GetSet("b", "ABC")
+	assert.Equal(t, int8(33), val)
+	assert.Nil(t, err)
+}
+
 func TestDB_Hash(t *testing.T) {
 	db := NewDB()
 	var val interface{}

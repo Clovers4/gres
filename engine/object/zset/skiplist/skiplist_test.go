@@ -1,6 +1,7 @@
 package skiplist
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/clovers4/gres/engine/object/plain"
@@ -29,11 +30,16 @@ func TestSkiplist(t *testing.T) {
 	sl.Insert(3.1, "c")
 	sl.Insert(2.1, "b")
 
-	sl.Delete(1.1, "a22")
+	//sl.Delete(1.1, "a22")
 
 	var vals []interface{}
 	for n := sl.Front(); n != nil; n = n.Next() {
 		vals = append(vals, n.Score(), n.Val())
+		fmt.Print(n.Score(), n.Val(), " ")
+		for _, a := range n.levels {
+			fmt.Print(a.next.val, " ")
+		}
+		fmt.Println()
 	}
 	assert.Equal(t, 6, len(vals))
 	assert.Equal(t, "{1.1, a, 2.1, b, 3.1, c}", array2String(vals))

@@ -1,0 +1,42 @@
+{"level":"info","ts":1586874966.5417857,"caller":"gres/server.go:112","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586874966.6365294,"caller":"gres/server.go:144","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586874981.9660513,"caller":"gres/server.go:165","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"error","ts":1586874981.9730272,"caller":"engine/db.go:417","msg":"[DB Save] Remove","err":"remove gres_1586874981.db: The process cannot access the file because it is being used by another process.","stacktrace":"github.com/clovers4/gres/engine.(*DB).Save\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:417\ngithub.com/clovers4/gres/engine.(*DB).Close\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:554\ngithub.com/clovers4/gres.(*Server).Stop\n\tD:/code/go/src/github.com/clovers4/gres/server.go:217\ngithub.com/clovers4/gres.(*Server).listenExist.func1\n\tD:/code/go/src/github.com/clovers4/gres/server.go:166"}
+{"level":"info","ts":1586874981.9740279,"caller":"gres/server.go:220","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586874987.1294172,"caller":"gres/server.go:112","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586874987.2082076,"caller":"gres/server.go:144","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586874998.7551675,"caller":"gres/server.go:165","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"error","ts":1586874998.7631488,"caller":"engine/db.go:417","msg":"[DB Save] Remove","err":"remove gres_1586874998.db: The process cannot access the file because it is being used by another process.","stacktrace":"github.com/clovers4/gres/engine.(*DB).Save\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:417\ngithub.com/clovers4/gres/engine.(*DB).Close\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:554\ngithub.com/clovers4/gres.(*Server).Stop\n\tD:/code/go/src/github.com/clovers4/gres/server.go:217\ngithub.com/clovers4/gres.(*Server).listenExist.func1\n\tD:/code/go/src/github.com/clovers4/gres/server.go:166"}
+{"level":"info","ts":1586874998.7631488,"caller":"gres/server.go:220","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875007.911424,"caller":"gres/server.go:112","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875008.0143557,"caller":"gres/server.go:144","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875015.550463,"caller":"gres/server.go:165","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"info","ts":1586875015.556447,"caller":"gres/server.go:220","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875041.6605477,"caller":"gres/server.go:113","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875041.7961805,"caller":"gres/server.go:145","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875052.8537838,"caller":"gres/server.go:166","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"error","ts":1586875052.85877,"caller":"engine/db.go:417","msg":"[DB Save] Remove","err":"remove gres_1586875052.db: The process cannot access the file because it is being used by another process.","stacktrace":"github.com/clovers4/gres/engine.(*DB).Save\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:417\ngithub.com/clovers4/gres/engine.(*DB).Close\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:554\ngithub.com/clovers4/gres.(*Server).Stop\n\tD:/code/go/src/github.com/clovers4/gres/server.go:218\ngithub.com/clovers4/gres.(*Server).listenExist.func1\n\tD:/code/go/src/github.com/clovers4/gres/server.go:167"}
+{"level":"info","ts":1586875052.8597667,"caller":"gres/server.go:221","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875081.0190775,"caller":"gres/server.go:113","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875081.1377583,"caller":"gres/server.go:145","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875096.910505,"caller":"gres/server.go:166","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"error","ts":1586875096.9164808,"caller":"engine/db.go:417","msg":"[DB Save] Remove","err":"remove gres_1586875096.db: The process cannot access the file because it is being used by another process.","stacktrace":"github.com/clovers4/gres/engine.(*DB).Save\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:417\ngithub.com/clovers4/gres/engine.(*DB).Close\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:554\ngithub.com/clovers4/gres.(*Server).Stop\n\tD:/code/go/src/github.com/clovers4/gres/server.go:218\ngithub.com/clovers4/gres.(*Server).listenExist.func1\n\tD:/code/go/src/github.com/clovers4/gres/server.go:167"}
+{"level":"info","ts":1586875096.9174783,"caller":"gres/server.go:221","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875103.7408466,"caller":"gres/server.go:113","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875103.855558,"caller":"gres/server.go:145","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875140.4476945,"caller":"gres/server.go:166","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"info","ts":1586875140.4526718,"caller":"gres/server.go:221","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875262.9395041,"caller":"gres/server.go:113","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875263.0930927,"caller":"gres/server.go:145","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875269.4858108,"caller":"gres/server.go:166","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"info","ts":1586875269.4897962,"caller":"gres/server.go:221","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875275.0526712,"caller":"gres/server.go:113","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875275.1394386,"caller":"gres/server.go:145","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875281.2002335,"caller":"gres/server.go:166","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"error","ts":1586875281.2082124,"caller":"engine/db.go:417","msg":"[DB Save] Remove","err":"remove gres_1586875281.db: The process cannot access the file because it is being used by another process.","stacktrace":"github.com/clovers4/gres/engine.(*DB).Save\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:417\ngithub.com/clovers4/gres/engine.(*DB).Close\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:554\ngithub.com/clovers4/gres.(*Server).Stop\n\tD:/code/go/src/github.com/clovers4/gres/server.go:218\ngithub.com/clovers4/gres.(*Server).listenExist.func1\n\tD:/code/go/src/github.com/clovers4/gres/server.go:167"}
+{"level":"info","ts":1586875281.2092133,"caller":"gres/server.go:221","msg":"[Server Stop] finished"}
+{"level":"info","ts":1586875381.6162694,"caller":"gres/server.go:113","msg":"server-options:{configFile: port:9876 connectionTimeout:120000000000}"}
+{"level":"info","ts":1586875381.7379441,"caller":"gres/server.go:145","msg":"gres start serving.","addr":"127.0.0.1:9876"}
+{"level":"warn","ts":1586875647.7050195,"caller":"gres/server.go:166","msg":"[Server Stop] get exit signal, start exit","signal":"interrupt"}
+{"level":"error","ts":1586875647.7129958,"caller":"engine/db.go:417","msg":"[DB Save] Remove","err":"remove gres_1586875647.db: The process cannot access the file because it is being used by another process.","stacktrace":"github.com/clovers4/gres/engine.(*DB).Save\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:417\ngithub.com/clovers4/gres/engine.(*DB).Close\n\tD:/code/go/src/github.com/clovers4/gres/engine/db.go:554\ngithub.com/clovers4/gres.(*Server).Stop\n\tD:/code/go/src/github.com/clovers4/gres/server.go:218\ngithub.com/clovers4/gres.(*Server).listenExist.func1\n\tD:/code/go/src/github.com/clovers4/gres/server.go:167"}
+{"level":"info","ts":1586875647.7139924,"caller":"gres/server.go:221","msg":"[Server Stop] finished"}

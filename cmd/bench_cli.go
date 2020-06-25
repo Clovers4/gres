@@ -1,9 +1,8 @@
-package main
+package cmd
 
 import (
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -20,13 +19,9 @@ import (
 const readSize = 4096
 
 var (
-	port = flag.Int("p", 9876, "specify port to use.  defaults to 9876.")
-	host = flag.String("h", "127.0.0.1", "specify host to use.  defaults to 127.0.0.1.")
+	port = 9876
+	host = "127.0.0.1"
 )
-
-func init() {
-	flag.Parse() //todo
-}
 
 // Client represents another side of Server, and is not the same as
 // gres/Client.
@@ -79,7 +74,7 @@ func NewClient() *Client {
 }
 
 func initFlag(opts *clientOptions) {
-	opts.remoteAddr = fmt.Sprintf("%s:%d", *host, *port)
+	opts.remoteAddr = fmt.Sprintf("%s:%d", host, port)
 }
 
 func (cli *Client) Start() {
@@ -185,22 +180,42 @@ func (cli *Client) interact(input string) (output string, err error) {
 // It will close the connection, ... , etc.
 func (cli *Client) GracefulExit() {
 	cli.conn.Close()
-	fmt.Println("CLOSE connection done...")
-	os.Exit(0)
+	//fmt.Println("CLOSE connection done...")
 }
 
 func (cli *Client) BenchSet(t int) {
 	for i := 0; i < t; i++ {
 		v := strconv.FormatInt(int64(i), 10)
+		command := fmt.Sprintf("get %v", v)
+
+		_, err := cli.interact(command)
+
+		if err != nil {
+			//fmt.Println("client has errors:", err)
+			continue
+		} else {
+			//fmt.Println(output)
+		}
+
+		name := strings.ToLower(command)
+		if name == "exit" || name == "quit" {
+			break
+		}
+	}
+}
+
+func (cli *Client) InitSet(t int) {
+	for i := 0; i < t; i++ {
+		v := strconv.FormatInt(int64(i), 10)
 		command := fmt.Sprintf("set %v %v", v, v)
 
-		output, err := cli.interact(command)
+		_, err := cli.interact(command)
 
 		if err != nil {
 			fmt.Println("client has errors:", err)
-			break
+			continue
 		} else {
-			fmt.Println(output)
+			//fmt.Println(output)
 		}
 
 		name := strings.ToLower(command)

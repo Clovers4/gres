@@ -20,3 +20,7 @@ my_test.go
 my_bench_test.go
 
 gres_*.db
+
+GRES_LOCK
+
+db_*.log
